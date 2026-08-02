@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auxano — Progressive Overload</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17181B;
+    --panel:#212226;
+    --panel-raised:#2A2B30;
+    --line:#38393E;
+    --chalk:#EDEAE1;
+    --chalk-dim:#9A9CA3;
+    --steel:#8B8D93;
+    --rust:#C1443A;
+    --rust-dim:#7A2E29;
+    --patina:#6B9C6E;
+    --radius:14px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding-bottom:40px;
+  }
+  h1,h2,h3{ font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  button{ font-family:'Inter',sans-serif; cursor:pointer; border:none; }
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
+    outline:2px solid var(--rust); outline-offset:2px;
+  }
+  input{
+    font-family:'IBM Plex Mono',monospace;
+    background:var(--panel-raised);
+    border:1px solid var(--line);
+    color:var(--chalk);
+    border-radius:8px;
+    padding:10px 8px;
+    font-size:16px;
+    width:100%;
+  }
+  input::placeholder{ color:#5C5D62; }
+
+  /* ---------- Header ---------- */
+  header.top{
+    padding:22px 20px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line);
+  }
+  header.top .brand{
+    font-size:22px; font-weight:700; letter-spacing:0.06em;
+    display:flex; align-items:center; gap:8px;
+  }
+  header.top .brand .bar{
+    width:18px; height:6px; background:var(--rust); border-radius:2px;
+  }
+  header.top .reset{
+    background:none; color:var(--steel); font-size:12px; text-decoration:underline;
+    text-transform:uppercase; letter-spacing:0.05em;
+  }
+
+  main{ flex:1; padding:20px; display:flex; flex-direction:column; gap:18px; }
+
+  /* ---------- Generic cards ---------- */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+  }
+  .muted{ color:var(--steel); font-size:14px; line-height:1.5; }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--rust); margin-bottom:6px; display:block;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:14px 20px; border-radius:10px; font-weight:600; font-size:15px;
+    width:100%;
+  }
+  .btn-primary{ background:var(--rust); color:#fff; }
+  .btn-primary:active{ background:var(--rust-dim); }
+  .btn-ghost{ background:var(--panel-raised); color:var(--chalk); border:1px solid var(--line); }
+  .btn-text{ background:none; color:var(--steel); font-size:13px; padding:8px; width:auto; }
+
+  /* ---------- Day picker ---------- */
+  .daygrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin:14px 0 4px; }
+  .daychip{
+    aspect-ratio:1; border-radius:10px; background:var(--panel-raised);
+    border:1px solid var(--line); color:var(--steel);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600;
+  }
+  .daychip.active{ background:var(--rust); border-color:var(--rust); color:#fff; }
+
+  /* ---------- Template list ---------- */
+  .tpl{
+    border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:10px;
+    background:var(--panel-raised); text-align:left; width:100%; color:var(--chalk);
+  }
+  .tpl.selected{ border-color:var(--rust); box-shadow:0 0 0 1px var(--rust); }
+  .tpl .tname{ font-family:'Oswald',sans-serif; font-size:17px; letter-spacing:0.02em; }
+  .tpl .tfreq{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--rust); margin:4px 0 6px; text-transform:uppercase; }
+  .tpl .tdesc{ font-size:13px; color:var(--steel); line-height:1.45; }
+  .tag{
+    display:inline-block; font-size:10px; padding:2px 7px; border-radius:20px;
+    background:rgba(107,156,110,0.15); color:var(--patina); margin-left:8px;
+    text-transform:uppercase; letter-spacing:0.05em; font-family:'IBM Plex Mono',monospace;
+  }
+
+  /* ---------- Day-session mapping ---------- */
+  .maprow{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .maprow:last-child{ border-bottom:none; }
+  .maprow .dname{ font-family:'Oswald',sans-serif; font-size:15px; letter-spacing:0.03em; width:90px; }
+  select{
+    background:var(--panel-raised); color:var(--chalk); border:1px solid var(--line);
+    border-radius:8px; padding:9px 10px; font-family:'Inter',sans-serif; font-size:14px; flex:1;
+  }
+
+  /* ---------- Exercise editor (setup step 4) ---------- */
+  .exrow{ padding:12px 0; border-bottom:1px solid var(--line); }
+  .exrow:last-child{ border-bottom:none; }
+  .exrow .exname{ font-weight:600; font-size:14px; margin-bottom:8px; }
+  .exrow .exfields{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; }
+  .exrow label{ font-size:10px; color:var(--steel); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:3px; }
+  .exrow input{ padding:8px 6px; font-size:13px; }
+  .sessionblock{ margin-bottom:22px; }
+  .sessionblock h3{ font-size:16px; margin-bottom:6px; color:var(--rust); }
+
+  /* ---------- Home ---------- */
+  .weekstrip{ display:flex; gap:6px; margin-top:14px; }
+  .wdot{
+    flex:1; aspect-ratio:1; border-radius:8px; background:var(--panel-raised);
+    border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--steel); position:relative;
+  }
+  .wdot.scheduled{ border-color:var(--rust); color:var(--chalk); }
+  .wdot.done{ background:var(--rust); border-color:var(--rust); color:#fff; }
+  .wdot.today{ box-shadow:0 0 0 2px var(--chalk); }
+
+  .today-card .sesname{ font-size:24px; margin:4px 0 2px; }
+  .today-card .sesmeta{ font-size:13px; color:var(--steel); margin-bottom:16px; }
+
+  /* ---------- Barbell / plate visual ---------- */
+  .barbell{
+    display:flex; align-items:center; justify-content:center; height:46px; margin:4px 0 2px;
+    gap:1px;
+  }
+  .plate-side{ display:flex; align-items:center; gap:2px; }
+  .plate-side.right{ flex-direction:row-reverse; }
+  .plate{ border-radius:3px; background:var(--rust); flex-shrink:0; }
+  .bar-rod{ width:60px; height:6px; background:var(--steel); border-radius:2px; }
+  .loadlabel{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--steel); margin-bottom:10px; }
+
+  /* ---------- Gym focus mode: one set at a time, no keyboard, no scrolling ---------- */
+  .focus-screen{
+    min-height:100vh; display:flex; flex-direction:column;
+    background:var(--bg);
+  }
+  .focus-top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 18px 10px;
+  }
+  .exit-btn{
+    width:44px; height:44px; border-radius:10px; background:var(--panel-raised);
+    border:1px solid var(--line); color:var(--steel); font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .progress-dots{ display:flex; gap:6px; align-items:center; }
+  .progress-dots .pd{ width:7px; height:7px; border-radius:50%; background:var(--line); }
+  .progress-dots .pd.done{ background:var(--patina); }
+  .progress-dots .pd.current{ background:var(--rust); width:20px; border-radius:4px; }
+  .focus-top .spacer{ width:44px; }
+
+  .focus-body{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:10px 20px 20px; text-align:center; gap:2px;
+  }
+  .focus-exname{ font-family:'Oswald',sans-serif; font-size:26px; letter-spacing:0.02em; line-height:1.15; }
+  .focus-setlabel{
+    font-family:'IBM Plex Mono',monospace; color:var(--rust); font-size:13px;
+    text-transform:uppercase; letter-spacing:0.1em; margin-top:6px;
+  }
+  .focus-prev{ font-size:12.5px; color:var(--steel); margin-top:2px; min-height:16px; }
+  .focus-target{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--steel);
+    margin-top:2px; min-height:14px;
+  }
+
+  .stepper-block{ margin-top:22px; }
+  .stepper-row{ display:flex; align-items:center; justify-content:center; gap:16px; }
+  .stepbtn{
+    width:58px; height:58px; border-radius:50%; background:var(--panel-raised);
+    border:1px solid var(--line); color:var(--chalk); font-size:26px; line-height:1;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    -webkit-tap-highlight-color:transparent; user-select:none;
+  }
+  .stepbtn:active{ background:var(--rust); border-color:var(--rust); }
+  .bignum-wrap{ display:flex; flex-direction:column; align-items:center; width:130px; }
+  .bignum{
+    font-family:'IBM Plex Mono',monospace; font-size:42px; font-weight:600;
+    background:none; border:none; color:var(--chalk); text-align:center;
+    width:100%; padding:0; -moz-appearance:textfield;
+  }
+  .bignum::-webkit-outer-spin-button, .bignum::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .bignum-unit{
+    font-size:11px; color:var(--steel); text-transform:uppercase; letter-spacing:0.1em; margin-top:-2px;
+  }
+  .stepper-gap{ height:20px; }
+
+  .focus-bb{ margin-top:20px; }
+
+  .focus-actions{ padding:16px 20px 26px; display:flex; flex-direction:column; gap:12px; }
+  .logbtn{
+    height:64px; border-radius:14px; font-family:'Oswald',sans-serif; font-size:19px;
+    letter-spacing:0.04em; text-transform:uppercase; background:var(--rust); color:#fff; width:100%;
+  }
+  .logbtn:active{ background:var(--rust-dim); }
+  .logbtn.done-state{ background:var(--patina); color:#0d1a0e; }
+  .focus-links{ display:flex; justify-content:space-between; }
+  .focus-links button{ background:none; color:var(--steel); font-size:13px; padding:10px 6px; text-transform:uppercase; letter-spacing:0.04em; }
+  .focus-links button:disabled{ opacity:0.3; }
+
+  .finish-screen{
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:30px; text-align:center; gap:6px;
+  }
+  .finish-screen .fi{ font-size:44px; color:var(--patina); margin-bottom:6px; }
+  .finish-screen h2{ font-size:24px; }
+  .finish-screen p{ color:var(--steel); font-size:14px; max-width:280px; }
+  .finish-screen .btn{ margin-top:22px; max-width:280px; }
+
+  /* ---------- In-app confirm modal (native confirm()/alert() are blocked in this sandbox) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(10,10,11,0.72);
+    display:flex; align-items:center; justify-content:center; padding:24px; z-index:100;
+  }
+  .modal-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:22px; max-width:340px; width:100%;
+  }
+  .modal-card p{ font-size:14.5px; line-height:1.5; color:var(--chalk); margin-bottom:18px; }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-actions .btn{ width:auto; flex:1; padding:12px; font-size:14px; }
+
+  /* ---------- Training log / history ---------- */
+  .statrow{ display:flex; gap:10px; }
+  .statcard{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 8px; text-align:center; }
+  .statnum{ font-family:'IBM Plex Mono',monospace; font-size:21px; font-weight:600; color:var(--rust); }
+  .statlabel{ font-size:10px; color:var(--steel); text-transform:uppercase; letter-spacing:0.04em; margin-top:4px; }
+
+  .heatgrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:12px; }
+  .hcell{
+    aspect-ratio:1; border-radius:6px; display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; background:var(--panel-raised);
+    border:1px solid var(--line); color:var(--steel);
+  }
+  .hcell.done{ background:var(--rust); border-color:var(--rust); color:#fff; }
+  .hcell.missed{ border-color:var(--rust-dim); color:var(--rust-dim); }
+  .hcell.scheduled{ border-color:var(--steel); }
+  .hcell.blank{ opacity:0.35; }
+  .hcell.istoday{ box-shadow:0 0 0 2px var(--chalk); }
+
+  .heatlegend{ display:flex; gap:14px; margin-top:12px; font-size:11px; color:var(--steel); flex-wrap:wrap; }
+  .heatlegend .lg{ display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:5px; vertical-align:middle; }
+  .heatlegend .lg.done{ background:var(--rust); }
+  .heatlegend .lg.missed{ background:var(--rust-dim); }
+  .heatlegend .lg.scheduled{ background:var(--panel-raised); border:1px solid var(--steel); }
+
+  .logday{ margin-bottom:12px; }
+  .logdate{ font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:0.02em; }
+  .logsession{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--rust); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+  .logexlist{ border-top:1px solid var(--line); margin-top:8px; padding-top:8px; }
+  .loglex{ display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:5px 0; }
+  .logexname{ color:var(--chalk); }
+  .logexsets{ color:var(--steel); font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right; }
+
+
+  .pr-badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--patina);
+    font-family:'IBM Plex Mono',monospace; margin-top:6px; text-transform:uppercase; letter-spacing:0.04em;
+  }
+
+  .stickybar{
+    position:sticky; bottom:0; background:linear-gradient(to top, var(--bg) 60%, transparent);
+    padding:16px 0 4px; margin-top:6px;
+  }
+
+  .steps{ display:flex; gap:6px; margin-bottom:18px; }
+  .steps .dot{ flex:1; height:3px; border-radius:2px; background:var(--line); }
+  .steps .dot.active{ background:var(--rust); }
+  .steps .dot.past{ background:var(--patina); }
+
+  .empty{ text-align:center; padding:40px 20px; color:var(--steel); }
+  .empty .plateicon{ font-size:32px; margin-bottom:10px; opacity:0.5; }
+
+  @media (prefers-reduced-motion:no-preference){
+    .card, .tpl, .btn{ transition:transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
+    .btn-primary:active{ transform:scale(0.98); }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+/* ============================= DATA ============================= */
+const DAYS = [
+  {k:'mon', label:'M', full:'Monday'},
+  {k:'tue', label:'T', full:'Tuesday'},
+  {k:'wed', label:'W', full:'Wednesday'},
+  {k:'thu', label:'T', full:'Thursday'},
+  {k:'fri', label:'F', full:'Friday'},
+  {k:'sat', label:'S', full:'Saturday'},
+  {k:'sun', label:'S', full:'Sunday'},
+];
+const DAY_ORDER = DAYS.map(d=>d.k);
+
+function ex(name, sets, repMin, repMax, inc, isTime){
+  return { name, sets, repMin, repMax, inc: inc===undefined?2.5:inc, isTime: !!isTime };
+}
+
+const TEMPLATES = [
+  {
+    id:'fullbody', name:'Full Body', freq:3,
+    desc:'Whole-body compound lifts each session. Highest per-session efficiency and the best-supported approach for beginners and time-limited lifters.',
+    sessions:[
+      {id:'fb-a', name:'Full Body A', exercises:[ex('Barbell Back Squat',3,6,8),ex('Bench Press',3,6,8),ex('Barbell Row',3,8,10),ex('Plank',3,30,60,0,true)]},
+      {id:'fb-b', name:'Full Body B', exercises:[ex('Deadlift',2,5,6,5),ex('Overhead Press',3,6,8,1.25),ex('Lat Pulldown',3,8,12),ex('Ab Rollout',3,8,12,0)]},
+      {id:'fb-c', name:'Full Body C', exercises:[ex('Front Squat',3,6,8),ex('Incline Bench Press',3,8,10),ex('Seated Cable Row',3,8,12),ex('Side Plank',3,30,45,0,true)]},
+    ]
+  },
+  {
+    id:'upperlower', name:'Upper / Lower', freq:4,
+    desc:'Splits the body into two halves trained twice weekly each — strong balance of frequency and per-muscle volume for intermediate lifters.',
+    sessions:[
+      {id:'ul-ua', name:'Upper A', exercises:[ex('Bench Press',4,6,8),ex('Barbell Row',4,6,8),ex('Overhead Press',3,8,10,1.25),ex('Barbell Curl',3,8,12,1.25)]},
+      {id:'ul-la', name:'Lower A', exercises:[ex('Barbell Back Squat',4,6,8),ex('Romanian Deadlift',3,8,10),ex('Leg Press',3,10,12,5),ex('Standing Calf Raise',4,10,15,2.5)]},
+      {id:'ul-ub', name:'Upper B', exercises:[ex('Incline Bench Press',4,8,10),ex('Pull-Up / Lat Pulldown',4,6,10),ex('Dumbbell Shoulder Press',3,8,12,1.25),ex('Triceps Pushdown',3,10,15,1.25)]},
+      {id:'ul-lb', name:'Lower B', exercises:[ex('Deadlift',3,4,6,5),ex('Front Squat',3,6,8),ex('Walking Lunge',3,10,12,2.5),ex('Seated Calf Raise',4,10,15,2.5)]},
+    ]
+  },
+  {
+    id:'ppl', name:'Push / Pull / Legs', freq:6,
+    desc:'Movement-pattern split run twice per week. High weekly volume and frequency — well suited to lifters training five to six days.',
+    sessions:[
+      {id:'ppl-push', name:'Push', exercises:[ex('Bench Press',4,6,8),ex('Overhead Press',3,8,10,1.25),ex('Incline Dumbbell Press',3,8,12,1.25),ex('Lateral Raise',3,12,15,1),ex('Triceps Pushdown',3,10,15,1.25)]},
+      {id:'ppl-pull', name:'Pull', exercises:[ex('Deadlift',3,5,6,5),ex('Barbell Row',4,6,8),ex('Pull-Up / Lat Pulldown',3,6,10),ex('Face Pull',3,12,15,1),ex('Barbell Curl',3,8,12,1.25)]},
+      {id:'ppl-legs', name:'Legs', exercises:[ex('Barbell Back Squat',4,6,8),ex('Romanian Deadlift',3,8,10),ex('Leg Press',3,10,12,5),ex('Leg Curl',3,10,12,2.5),ex('Standing Calf Raise',4,10,15,2.5)]},
+    ]
+  },
+  {
+    id:'phul', name:'PHUL', freq:4,
+    desc:'Power Hypertrophy Upper Lower — alternates heavy low-rep power days with lighter high-rep hypertrophy days across the same muscle groups.',
+    sessions:[
+      {id:'phul-up', name:'Upper Power', exercises:[ex('Bench Press',4,3,5,2.5),ex('Barbell Row',4,3,5,2.5),ex('Overhead Press',3,5,8,1.25),ex('Weighted Pull-Up',3,5,8,1.25)]},
+      {id:'phul-lp', name:'Lower Power', exercises:[ex('Barbell Back Squat',4,3,5,2.5),ex('Deadlift',3,3,5,5),ex('Leg Press',3,8,10,5),ex('Standing Calf Raise',4,6,10,2.5)]},
+      {id:'phul-uh', name:'Upper Hypertrophy', exercises:[ex('Incline Bench Press',3,8,12),ex('Seated Cable Row',3,8,12),ex('Dumbbell Shoulder Press',3,10,12,1.25),ex('Barbell Curl',3,10,12,1.25),ex('Triceps Pushdown',3,10,12,1.25)]},
+      {id:'phul-lh', name:'Lower Hypertrophy', exercises:[ex('Front Squat',3,8,12),ex('Romanian Deadlift',3,10,12),ex('Walking Lunge',3,10,12,2.5),ex('Leg Curl',3,10,15,2.5),ex('Seated Calf Raise',3,12,15,2.5)]},
+    ]
+  },
+  {
+    id:'arnold', name:'Arnold Split', freq:6,
+    desc:'Classic bodybuilding split pairing chest and back, then shoulders and arms, then legs — each hit twice weekly for maximum per-muscle volume.',
+    sessions:[
+      {id:'ar-cb', name:'Chest & Back', exercises:[ex('Bench Press',4,6,10),ex('Barbell Row',4,6,10),ex('Incline Dumbbell Press',3,8,12,1.25),ex('Lat Pulldown',3,8,12),ex('Cable Fly',3,10,15,1.25)]},
+      {id:'ar-sa', name:'Shoulders & Arms', exercises:[ex('Overhead Press',4,6,10,1.25),ex('Lateral Raise',3,12,15,1),ex('Barbell Curl',3,8,12,1.25),ex('Triceps Pushdown',3,8,12,1.25),ex('Face Pull',3,12,15,1)]},
+      {id:'ar-legs', name:'Legs', exercises:[ex('Barbell Back Squat',4,6,10),ex('Romanian Deadlift',3,8,12),ex('Leg Press',3,10,15,5),ex('Leg Curl',3,10,15,2.5),ex('Standing Calf Raise',4,10,15,2.5)]},
+    ]
+  },
+];
+
+/* ============================= STATE ============================= */
+let state = null;
+const STORE_KEY = 'auxano-state-v1';
+
+function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function weekdayKey(date){ const idx=(date.getDay()+6)%7; return DAY_ORDER[idx]; } // mon=0
+function hasLoggedDay(dateKey){
+  const d = state.completions[dateKey];
+  return !!d && Object.keys(d).some(k=>k!=='_meta');
+}
+
+function freshState(){
+  return { setup:null, history:{}, completions:{} };
+}
+
+async function loadState(){
+  try{
+    const r = await window.storage.get(STORE_KEY);
+    state = r && r.value ? JSON.parse(r.value) : freshState();
+  }catch(e){ state = freshState(); }
+}
+async function saveState(){
+  try{ await window.storage.set(STORE_KEY, JSON.stringify(state)); }
+  catch(e){ console.error('save failed', e); }
+}
+
+/* ============================= IN-APP CONFIRM MODAL ============================= */
+// Sandboxed artifact frames block window.confirm()/alert() silently — this is a real substitute.
+function showConfirm(message, confirmLabel, onYes){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card">
+      <p>${message}</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modalCancel">Cancel</button>
+        <button class="btn btn-primary" id="modalOk">${confirmLabel}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
+  overlay.querySelector('#modalCancel').addEventListener('click', ()=> overlay.remove());
+  overlay.querySelector('#modalOk').addEventListener('click', ()=>{ overlay.remove(); onYes(); });
+}
+
+/* ============================= WIZARD TEMP STATE ============================= */
+let wizard = { step:1, selectedDays:[], templateId:null, dayMap:{}, exercises:null };
+
+/* ============================= RENDER ROOT ============================= */
+const root = document.getElementById('app');
+
+function render(){
+  if(!state.setup){ renderWizard(); }
+  else { renderHome(); }
+}
+
+/* ============================= WIZARD ============================= */
+function enterEditSetup(){
+  const s = state.setup;
+  wizard = {
+    step: 1,
+    selectedDays: Object.keys(s.dayMap),
+    templateId: s.templateId,
+    dayMap: {...s.dayMap},
+    exercises: JSON.parse(JSON.stringify(s.exercises)),
+  };
+  renderWizard();
+}
+
+function renderWizard(){
+  let body = '';
+  if(wizard.step===1) body = wizardStep1();
+  else if(wizard.step===2) body = wizardStep2();
+  else if(wizard.step===3) body = wizardStep3();
+  else body = wizardStep4();
+
+  root.innerHTML = `
+    <header class="top">
+      <div class="brand"><span class="bar"></span>AUXANO</div>
+      ${state.setup ? '<button class="reset" id="cancelEdit">Cancel</button>' : ''}
+    </header>
+    <main>
+      <div class="steps">
+        ${[1,2,3,4].map(n=>`<div class="dot ${n<wizard.step?'past':n===wizard.step?'active':''}"></div>`).join('')}
+      </div>
+      ${body}
+    </main>
+  `;
+  root.querySelector('#cancelEdit')?.addEventListener('click', renderHome);
+  attachWizardHandlers();
+}
+
+function wizardStep1(){
+  return `
+    <div>
+      <span class="eyebrow">Step 1 of 4</span>
+      <h2 style="font-size:22px;">Which days do you train?</h2>
+      <p class="muted" style="margin-top:8px;">Pick every day you plan to lift. You can change this later.</p>
+      <div class="daygrid" id="daygrid">
+        ${DAYS.map(d=>`<div class="daychip ${wizard.selectedDays.includes(d.k)?'active':''}" data-day="${d.k}" role="button" tabindex="0">${d.label}</div>`).join('')}
+      </div>
+      <button class="btn btn-primary" id="toStep2" style="margin-top:18px;" ${wizard.selectedDays.length===0?'disabled':''}>Continue</button>
+    </div>
+  `;
+}
+
+function wizardStep2(){
+  const n = wizard.selectedDays.length;
+  const isCustom = wizard.templateId === 'custom';
+  return `
+    <div>
+      <span class="eyebrow">Step 2 of 4</span>
+      <h2 style="font-size:22px;">Choose your routine</h2>
+      <p class="muted" style="margin-top:8px;">You picked ${n} training day${n===1?'':'s'} a week. Routines built for that frequency are marked.</p>
+      <div style="margin-top:16px;">
+        ${TEMPLATES.map(t=>`
+          <button class="tpl ${wizard.templateId===t.id?'selected':''}" data-tpl="${t.id}">
+            <div class="tname">${t.name}${t.freq===n?'<span class="tag">Best fit</span>':''}</div>
+            <div class="tfreq">${t.freq} days / week · ${t.sessions.length} session type${t.sessions.length===1?'':'s'}</div>
+            <div class="tdesc">${t.desc}</div>
+          </button>
+        `).join('')}
+        <button class="tpl custom-tpl ${isCustom?'selected':''}" id="selectCustom">
+          <div class="tname">Custom Routine</div>
+          <div class="tfreq">Built by you</div>
+          <div class="tdesc">Name your own session types and add whatever exercises, sets, reps and increments you want — no template.</div>
+        </button>
+      </div>
+      ${isCustom ? `
+        <div class="card" style="margin-top:12px;">
+          <span class="eyebrow">Your session types</span>
+          ${wizard.customSessions.map((s,i)=>`
+            <div class="maprow">
+              <input type="text" class="custom-session-input" data-customname="${i}" value="${s.name}" placeholder="e.g. Push Day">
+              ${wizard.customSessions.length>1 ? `<button class="btn-text" data-removesession="${i}">Remove</button>` : ''}
+            </div>
+          `).join('')}
+          <button class="btn btn-ghost" id="addSessionType" style="margin-top:10px;">+ Add session type</button>
+        </div>
+      ` : ''}
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn btn-ghost" id="backTo1">Back</button>
+        <button class="btn btn-primary" id="toStep3" ${!wizard.templateId || (isCustom && !wizard.customSessions.some(s=>s.name.trim()))?'disabled':''}>Continue</button>
+      </div>
+    </div>
+  `;
+}
+
+function wizardStep3(){
+  const tpl = TEMPLATES.find(t=>t.id===wizard.templateId);
+  const sorted = [...wizard.selectedDays].sort((a,b)=>DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
+  return `
+    <div>
+      <span class="eyebrow">Step 3 of 4</span>
+      <h2 style="font-size:22px;">Assign sessions to days</h2>
+      <p class="muted" style="margin-top:8px;">We've cycled ${tpl.name} across your training days. Adjust if you'd like.</p>
+      <div class="card" style="margin-top:16px;">
+        ${sorted.map((dk,i)=>{
+          const dObj = DAYS.find(d=>d.k===dk);
+          const current = wizard.dayMap[dk] || tpl.sessions[i % tpl.sessions.length].id;
+          wizard.dayMap[dk] = current;
+          return `
+            <div class="maprow">
+              <div class="dname">${dObj.full}</div>
+              <select data-daymap="${dk}">
+                ${tpl.sessions.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${s.name}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="btn btn-ghost" id="backTo2">Back</button>
+        <button class="btn btn-primary" id="toStep4">Continue</button>
+      </div>
+    </div>
+  `;
+}
+
+function wizardStep4(){
+  const tpl = TEMPLATES.find(t=>t.id===wizard.templateId);
+  if(!wizard.exercises){
+    wizard.exercises = {};
+    tpl.sessions.forEach(s=>{
+      wizard.exercises[s.id] = s.exercises.map(e=>({...e, id: s.id+'__'+slug(e.name)}));
+    });
+  }
+  return `
+    <div>
+      <span class="eyebrow">Step 4 of 4</span>
+      <h2 style="font-size:22px;">Review sets & reps</h2>
+      <p class="muted" style="margin-top:8px;">These are your defaults. Edit anything, then start training — weights get logged live during each session.</p>
+      ${tpl.sessions.map(s=>`
+        <div class="sessionblock">
+          <h3>${s.name}</h3>
+          <div class="card">
+            ${wizard.exercises[s.id].map((e,idx)=>`
+              <div class="exrow">
+                <div class="exname">${e.name}</div>
+                <div class="exfields">
+                  <div><label>Sets</label><input type="number" min="1" data-ex="${s.id}|${idx}|sets" value="${e.sets}"></div>
+                  <div><label>${e.isTime?'Min sec':'Min reps'}</label><input type="number" min="0" data-ex="${s.id}|${idx}|repMin" value="${e.repMin}"></div>
+                  <div><label>${e.isTime?'Max sec':'Max reps'}</label><input type="number" min="0" data-ex="${s.id}|${idx}|repMax" value="${e.repMax}"></div>
+                  <div><label>+kg step</label><input type="number" step="0.25" min="0" data-ex="${s.id}|${idx}|inc" value="${e.inc}"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+      <div style="display:flex; gap:10px; margin-top:6px;">
+        <button class="btn btn-ghost" id="backTo3">Back</button>
+        <button class="btn btn-primary" id="finishSetup">Start using Auxano</button>
+      </div>
+    </div>
+  `;
+}
+
+function attachWizardHandlers(){
+  if(wizard.step===1){
+    root.querySelectorAll('[data-day]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const d = el.dataset.day;
+        const i = wizard.selectedDays.indexOf(d);
+        if(i>-1) wizard.selectedDays.splice(i,1); else wizard.selectedDays.push(d);
+        renderWizard();
+      });
+      el.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); el.click(); } });
+    });
+    root.querySelector('#toStep2')?.addEventListener('click', ()=>{ wizard.step=2; renderWizard(); });
+  }
+  if(wizard.step===2){
+    root.querySelectorAll('[data-tpl]').forEach(el=>{
+      el.addEventListener('click', ()=>{ wizard.templateId = el.dataset.tpl; wizard.dayMap={}; wizard.exercises=null; renderWizard(); });
+    });
+    root.querySelector('#backTo1')?.addEventListener('click', ()=>{ wizard.step=1; renderWizard(); });
+    root.querySelector('#toStep3')?.addEventListener('click', ()=>{ wizard.step=3; renderWizard(); });
+  }
+  if(wizard.step===3){
+    root.querySelectorAll('[data-daymap]').forEach(el=>{
+      el.addEventListener('change', ()=>{ wizard.dayMap[el.dataset.daymap] = el.value; });
+    });
+    root.querySelector('#backTo2')?.addEventListener('click', ()=>{ wizard.step=2; renderWizard(); });
+    root.querySelector('#toStep4')?.addEventListener('click', ()=>{ wizard.step=4; renderWizard(); });
+  }
+  if(wizard.step===4){
+    root.querySelectorAll('[data-ex]').forEach(el=>{
+      el.addEventListener('change', ()=>{
+        const [sid, idx, field] = el.dataset.ex.split('|');
+        wizard.exercises[sid][idx][field] = parseFloat(el.value) || 0;
+      });
+    });
+    root.querySelector('#backTo3')?.addEventListener('click', ()=>{ wizard.step=3; renderWizard(); });
+    root.querySelector('#finishSetup')?.addEventListener('click', async ()=>{
+      state.setup = {
+        templateId: wizard.templateId,
+        dayMap: wizard.dayMap,
+        exercises: wizard.exercises,
+      };
+      await saveState();
+      render();
+    });
+  }
+}
+
+/* ============================= PLATE VISUAL ============================= */
+function platesForSide(weightPerSide){
+  const denoms = [20,15,10,5,2.5,1.25];
+  let rem = Math.max(0, weightPerSide);
+  const plates = [];
+  for(const d of denoms){
+    while(rem >= d - 0.001){ plates.push(d); rem -= d; }
+  }
+  return plates;
+}
+function plateHeight(d){
+  const map = {20:40, 15:34, 10:28, 5:22, 2.5:16, 1.25:12};
+  return map[d] || 12;
+}
+function plateWidth(d){ return d>=15 ? 10 : 7; }
+
+function barbellSVG(totalWeight){
+  const barW = 20; // assume standard olympic bar
+  const perSide = Math.max(0,(totalWeight - barW))/2;
+  const plates = platesForSide(perSide);
+  const sideHTML = plates.map(d=>`<div class="plate" style="height:${plateHeight(d)}px; width:${plateWidth(d)}px;"></div>`).join('');
+  return `
+    <div class="barbell">
+      <div class="plate-side left">${sideHTML}</div>
+      <div class="bar-rod"></div>
+      <div class="plate-side right">${sideHTML}</div>
+    </div>
+    <div class="loadlabel">${totalWeight>0 ? totalWeight.toFixed(2).replace(/\.00$/,'') + ' kg loaded' : 'bar only'}</div>
+  `;
+}
+
+/* ============================= PROGRESSION LOGIC ============================= */
+function getHistory(exId){ return state.history[exId] || []; }
+function lastSession(exId){ const h=getHistory(exId); return h.length? h[h.length-1] : null; }
+
+function suggestTarget(exSpec){
+  const last = lastSession(exSpec.id);
+  if(!last || !last.sets.length){
+    return { weight: null, note: 'No previous data — log your starting point.' };
+  }
+  const topWeight = Math.max(...last.sets.map(s=>s.weight));
+  const allHitMax = last.sets.every(s=> exSpec.isTime ? s.reps>=exSpec.repMax : s.reps>=exSpec.repMax);
+  const allHitMin = last.sets.every(s=> s.reps>=exSpec.repMin);
+  if(allHitMax){
+    return { weight: +(topWeight + exSpec.inc).toFixed(2), note: `Last time you hit the top of your range — step up.` };
+  }
+  if(allHitMin){
+    return { weight: topWeight, note: `Same weight — push for more reps in your range.` };
+  }
+  return { weight: topWeight, note: `Same weight — focus on completing your rep range.` };
+}
+
+/* ============================= HOME ============================= */
+function renderHome(){
+  const now = new Date();
+  const tKey = todayKey();
+  const wkKey = weekdayKey(now);
+  const scheduledSessionId = state.setup.dayMap[wkKey];
+  const tpl = TEMPLATES.find(t=>t.id===state.setup.templateId);
+  const session = scheduledSessionId ? tpl.sessions.find(s=>s.id===scheduledSessionId) : null;
+  const doneToday = hasLoggedDay(tKey);
+
+  // week strip: order mon..sun, mark today
+  const sorted = [...DAY_ORDER];
+  const weekStripHTML = sorted.map(dk=>{
+    const dObj = DAYS.find(d=>d.k===dk);
+    const isTraining = !!state.setup.dayMap[dk];
+    const isToday = dk===wkKey;
+    // figure completion for this date within current week (approx by day-of-week only, best-effort)
+    let cls = 'wdot';
+    if(isTraining) cls += ' scheduled';
+    if(isToday) cls += ' today';
+    if(isToday && doneToday) cls += ' done';
+    return `<div class="${cls}">${dObj.label}</div>`;
+  }).join('');
+
+  let mainHTML = '';
+  if(!session){
+    mainHTML = `
+      <div class="card today-card">
+        <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}</span>
+        <h2 class="sesname">Rest day</h2>
+        <p class="sesmeta">No session scheduled today. Recovery is part of the program.</p>
+      </div>
+    `;
+  } else if(doneToday){
+    mainHTML = `
+      <div class="card today-card">
+        <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}</span>
+        <h2 class="sesname">${session.name} — done</h2>
+        <p class="sesmeta">Logged for today. Nice work.</p>
+        <button class="btn btn-ghost" id="reopenSession">Review / edit today's log</button>
+      </div>
+    `;
+  } else {
+    mainHTML = `
+      <div class="card today-card">
+        <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}</span>
+        <h2 class="sesname">${session.name}</h2>
+        <p class="sesmeta">${state.setup.exercises[session.id].length} exercises scheduled</p>
+        <button class="btn btn-primary" id="startSession">Start workout</button>
+      </div>
+    `;
+  }
+
+  root.innerHTML = `
+    <header class="top">
+      <div class="brand"><span class="bar"></span>AUXANO</div>
+      <div style="display:flex; gap:14px;">
+        <button class="reset" id="historyBtn">Training log</button>
+        <button class="reset" id="resetBtn">Edit setup</button>
+      </div>
+    </header>
+    <main>
+      ${mainHTML}
+      <div class="card">
+        <span class="eyebrow">This week</span>
+        <div class="weekstrip">${weekStripHTML}</div>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Routine</span>
+        <div style="font-family:'Oswald',sans-serif; font-size:16px; margin-top:4px;">${tpl.name}</div>
+        <p class="muted" style="margin-top:4px;">${tpl.desc}</p>
+      </div>
+    </main>
+  `;
+
+  root.querySelector('#resetBtn')?.addEventListener('click', enterEditSetup);
+  root.querySelector('#historyBtn')?.addEventListener('click', renderHistory);
+  root.querySelector('#startSession')?.addEventListener('click', ()=> renderSession(session.id, false));
+  root.querySelector('#reopenSession')?.addEventListener('click', ()=> renderSession(session.id, true));
+}
+
+/* ============================= WORKOUT SESSION — GYM FOCUS MODE ============================= */
+// One set, one screen. No typing required — big +/- steppers. Auto-advances through
+// every set of every exercise in order, then shows a finish screen.
+let sessionDraft = {};   // exId -> [{weight,reps,done}]
+let focus = { exercises:[], flat:[], pos:0, sessionName:'', sessionId:'' };
+// flat = [{exIdx, setIdx}] linear walk order through all sets, for simple prev/next + dot progress
+
+function renderSession(sessionId, isReview){
+  const tpl = TEMPLATES.find(t=>t.id===state.setup.templateId);
+  const session = tpl.sessions.find(s=>s.id===sessionId);
+  const exercises = state.setup.exercises[sessionId];
+  const tKey = todayKey();
+
+  sessionDraft = {};
+  const flat = [];
+  exercises.forEach((exSpec, exIdx)=>{
+    const target = suggestTarget(exSpec);
+    let existing = null;
+    if(isReview && state.completions[tKey] && state.completions[tKey][exSpec.id]){
+      existing = state.completions[tKey][exSpec.id].sets;
+    }
+    const rows = [];
+    for(let i=0;i<exSpec.sets;i++){
+      if(existing && existing[i]){ rows.push({...existing[i], done:true}); }
+      else { rows.push({ weight: target.weight!==null ? target.weight : 0, reps: exSpec.repMin, done:false }); }
+      flat.push({exIdx, setIdx:i});
+    }
+    sessionDraft[exSpec.id] = rows;
+  });
+
+  // resume at first not-done set (fresh sessions: pos 0; review: land at start)
+  let startPos = 0;
+  if(!isReview){
+    const firstUndone = flat.findIndex(f=>{
+      const exSpec = exercises[f.exIdx];
+      return !sessionDraft[exSpec.id][f.setIdx].done;
+    });
+    startPos = firstUndone === -1 ? 0 : firstUndone;
+  }
+
+  focus = { exercises, flat, pos: startPos, sessionName: session.name, sessionId };
+  paintFocus();
+}
+
+function currentCell(){
+  const f = focus.flat[focus.pos];
+  const exSpec = focus.exercises[f.exIdx];
+  const row = sessionDraft[exSpec.id][f.setIdx];
+  return { f, exSpec, row };
+}
+
+function paintFocus(){
+  const { f, exSpec, row } = currentCell();
+  const last = lastSession(exSpec.id);
+  const target = suggestTarget(exSpec);
+  const lastSetOfSameIndex = last && last.sets[f.setIdx] ? last.sets[f.setIdx] : null;
+  const unit = exSpec.isTime ? 'sec' : 'reps';
+
+  const prevText = lastSetOfSameIndex
+    ? `Last time, set ${f.setIdx+1}: ${lastSetOfSameIndex.weight}kg × ${lastSetOfSameIndex.reps}${exSpec.isTime?'s':''}`
+    : (last ? `Last time: ${last.sets.map(s=>`${s.weight}×${s.reps}`).join(', ')}` : 'No previous data logged yet');
+
+  const targetText = target.weight!==null
+    ? `Target ${target.weight}kg × ${exSpec.repMin}-${exSpec.repMax}${exSpec.isTime?'s':''}`
+    : target.note;
+
+  const dotsHTML = focus.exercises.map((e,idx)=>{
+    const allDone = sessionDraft[e.id].every(r=>r.done);
+    const cls = idx===f.exIdx ? 'current' : (allDone ? 'done' : '');
+    return `<div class="pd ${cls}"></div>`;
+  }).join('');
+
+  root.innerHTML = `
+    <div class="focus-screen">
+      <div class="focus-top">
+        <button class="exit-btn" id="exitFocus" aria-label="Exit workout">✕</button>
+        <div class="progress-dots">${dotsHTML}</div>
+        <div class="spacer"></div>
+      </div>
+
+      <div class="focus-body">
+        <div class="focus-exname">${exSpec.name}</div>
+        <div class="focus-setlabel">Set ${f.setIdx+1} of ${exSpec.sets}</div>
+        <div class="focus-prev">${prevText}</div>
+        <div class="focus-target">${targetText}</div>
+
+        <div class="stepper-block">
+          <div class="stepper-row">
+            <button class="stepbtn" id="wMinus" aria-label="Decrease weight">–</button>
+            <div class="bignum-wrap">
+              <input class="bignum" type="number" inputmode="decimal" id="wInput" value="${row.weight}">
+              <div class="bignum-unit">kg</div>
+            </div>
+            <button class="stepbtn" id="wPlus" aria-label="Increase weight">+</button>
+          </div>
+          <div class="stepper-gap"></div>
+          <div class="stepper-row">
+            <button class="stepbtn" id="rMinus" aria-label="Decrease ${unit}">–</button>
+            <div class="bignum-wrap">
+              <input class="bignum" type="number" inputmode="numeric" id="rInput" value="${row.reps}">
+              <div class="bignum-unit">${unit}</div>
+            </div>
+            <button class="stepbtn" id="rPlus" aria-label="Increase ${unit}">+</button>
+          </div>
+        </div>
+
+        ${!exSpec.isTime ? `<div class="focus-bb">${barbellSVG(parseFloat(row.weight)||0)}</div>` : ''}
+      </div>
+
+      <div class="focus-actions">
+        <button class="btn logbtn ${row.done?'done-state':''}" id="logSet">${row.done ? 'Set logged ✓ — Next' : 'Log set'}</button>
+        <div class="focus-links">
+          <button id="prevSet" ${focus.pos===0?'disabled':''}>‹ Back</button>
+          <button id="exitFocus2">End workout</button>
+          <button id="skipSet">Skip ›</button>
+        </div>
+      </div>
+    </div>
+  `;
+  attachFocusHandlers(exSpec, row);
+}
+
+function stepWeight(exSpec, delta, row){
+  const inc = exSpec.inc && exSpec.inc>0 ? exSpec.inc : 1.25;
+  row.weight = Math.max(0, +((parseFloat(row.weight)||0) + delta*inc).toFixed(2));
+}
+function stepReps(delta, row){
+  row.reps = Math.max(0, (parseInt(row.reps)||0) + delta);
+}
+
+function attachFocusHandlers(exSpec, row){
+  root.querySelector('#exitFocus')?.addEventListener('click', confirmExitFocus);
+  root.querySelector('#exitFocus2')?.addEventListener('click', confirmExitFocus);
+
+  root.querySelector('#wMinus')?.addEventListener('click', ()=>{ stepWeight(exSpec,-1,row); refreshFocusNumbers(exSpec,row); });
+  root.querySelector('#wPlus')?.addEventListener('click', ()=>{ stepWeight(exSpec,1,row); refreshFocusNumbers(exSpec,row); });
+  root.querySelector('#rMinus')?.addEventListener('click', ()=>{ stepReps(-1,row); refreshFocusNumbers(exSpec,row); });
+  root.querySelector('#rPlus')?.addEventListener('click', ()=>{ stepReps(1,row); refreshFocusNumbers(exSpec,row); });
+
+  root.querySelector('#wInput')?.addEventListener('input', (e)=>{ row.weight = e.target.value; updateBarbellOnly(exSpec,row); });
+  root.querySelector('#rInput')?.addEventListener('input', (e)=>{ row.reps = e.target.value; });
+
+  root.querySelector('#logSet')?.addEventListener('click', ()=>{
+    row.weight = parseFloat(row.weight)||0;
+    row.reps = parseFloat(row.reps)||0;
+    row.done = true;
+    advance();
+  });
+  root.querySelector('#skipSet')?.addEventListener('click', advance);
+  root.querySelector('#prevSet')?.addEventListener('click', ()=>{
+    if(focus.pos>0){ focus.pos--; paintFocus(); }
+  });
+}
+
+function refreshFocusNumbers(exSpec, row){
+  const wInput = root.querySelector('#wInput');
+  const rInput = root.querySelector('#rInput');
+  if(wInput) wInput.value = row.weight;
+  if(rInput) rInput.value = row.reps;
+  updateBarbellOnly(exSpec,row);
+}
+function updateBarbellOnly(exSpec, row){
+  if(exSpec.isTime) return;
+  const bbWrap = root.querySelector('.focus-bb');
+  if(bbWrap) bbWrap.innerHTML = barbellSVG(parseFloat(row.weight)||0);
+}
+
+function advance(){
+  if(focus.pos < focus.flat.length-1){
+    focus.pos++;
+    paintFocus();
+  } else {
+    saveFocusSession();
+  }
+}
+
+function confirmExitFocus(){
+  showConfirm('End this workout now? Anything logged so far will be saved.', 'End workout', ()=> saveFocusSession(true));
+}
+
+async function saveFocusSession(early){
+  const tKey = todayKey();
+  if(!state.completions[tKey]) state.completions[tKey] = {};
+  state.completions[tKey]._meta = { sessionId: focus.sessionId, sessionName: focus.sessionName };
+  focus.exercises.forEach(exSpec=>{
+    const rows = sessionDraft[exSpec.id].filter(r=> r.done);
+    if(rows.length){
+      const cleanSets = rows.map(r=>({weight:parseFloat(r.weight)||0, reps:parseFloat(r.reps)||0}));
+      if(!state.history[exSpec.id]) state.history[exSpec.id] = [];
+      state.history[exSpec.id].push({ date: tKey, sets: cleanSets });
+      state.completions[tKey][exSpec.id] = { name: exSpec.name, isTime: exSpec.isTime, sets: cleanSets };
+    }
+  });
+  await saveState();
+  paintFinish(early);
+}
+
+function paintFinish(early){
+  root.innerHTML = `
+    <div class="finish-screen">
+      <div class="fi">✓</div>
+      <h2>${early ? 'Workout saved' : 'Workout complete'}</h2>
+      <p>${focus.sessionName} logged for today. Next time you train this session, your targets will already be updated.</p>
+      <button class="btn btn-primary" id="doneBtn">Done</button>
+    </div>
+  `;
+  root.querySelector('#doneBtn')?.addEventListener('click', renderHome);
+}
+
+/* ============================= HISTORY / TRAINING LOG ============================= */
+function computeStreak(){
+  let streak = 0;
+  let d = new Date();
+  for(let i=0;i<400;i++){
+    const wk = weekdayKey(d);
+    const dk = d.toISOString().slice(0,10);
+    const scheduled = !!state.setup.dayMap[wk];
+    if(scheduled){
+      if(hasLoggedDay(dk)) streak++;
+      else if(dk !== todayKey()) break; // today not done yet doesn't break the streak
+    }
+    d = new Date(d); d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+
+function computeStats(){
+  const totalSessions = Object.keys(state.completions).filter(hasLoggedDay).length;
+  const now = new Date();
+  const todayIdx = DAY_ORDER.indexOf(weekdayKey(now));
+  const monday = new Date(now); monday.setDate(now.getDate()-todayIdx);
+  let scheduledThisWeek=0, doneThisWeek=0;
+  for(let i=0;i<7;i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const wk = DAY_ORDER[i];
+    if(state.setup.dayMap[wk]){
+      scheduledThisWeek++;
+      if(hasLoggedDay(d.toISOString().slice(0,10))) doneThisWeek++;
+    }
+  }
+  return { totalSessions, scheduledThisWeek, doneThisWeek, streak: computeStreak() };
+}
+
+function buildHeatmap(){
+  const today = new Date();
+  const cells = [];
+  for(let i=27;i>=0;i--){
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const dk = d.toISOString().slice(0,10);
+    const wk = weekdayKey(d);
+    const scheduled = !!state.setup.dayMap[wk];
+    const done = hasLoggedDay(dk);
+    let status='blank';
+    if(done) status='done';
+    else if(scheduled && dk < todayKey()) status='missed';
+    else if(scheduled) status='scheduled';
+    cells.push({ dk, dayNum:d.getDate(), status, isToday: dk===todayKey() });
+  }
+  return cells;
+}
+
+function renderHistory(){
+  const stats = computeStats();
+  const cells = buildHeatmap();
+  const dateKeys = Object.keys(state.completions).filter(hasLoggedDay).sort().reverse();
+
+  const heatmapHTML = cells.map(c=>
+    `<div class="hcell ${c.status} ${c.isToday?'istoday':''}" title="${c.dk}">${c.dayNum}</div>`
+  ).join('');
+
+  const listHTML = dateKeys.length ? dateKeys.map(dk=>{
+    const entry = state.completions[dk];
+    const meta = entry._meta || { sessionName:'Workout' };
+    const exIds = Object.keys(entry).filter(k=>k!=='_meta');
+    const d = new Date(dk+'T00:00:00');
+    const dateLabel = d.toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' });
+    const exHTML = exIds.map(exId=>{
+      const e = entry[exId];
+      const setsStr = e.sets.map(s=>`${s.weight}kg×${s.reps}${e.isTime?'s':''}`).join(', ');
+      return `<div class="loglex"><span class="logexname">${e.name}</span><span class="logexsets">${setsStr}</span></div>`;
+    }).join('');
+    return `
+      <div class="card logday">
+        <div class="logdate">${dateLabel}</div>
+        <div class="logsession">${meta.sessionName}</div>
+        <div class="logexlist">${exHTML}</div>
+      </div>
+    `;
+  }).join('') : `<div class="empty"><div class="plateicon">◐</div>No workouts logged yet.</div>`;
+
+  root.innerHTML = `
+    <header class="top">
+      <button class="exit-btn" id="backHomeFromHistory" aria-label="Back to home">←</button>
+      <div class="brand" style="font-size:15px;">TRAINING LOG</div>
+      <div style="width:44px;"></div>
+    </header>
+    <main>
+      <div class="statrow">
+        <div class="statcard"><div class="statnum">${stats.totalSessions}</div><div class="statlabel">Sessions logged</div></div>
+        <div class="statcard"><div class="statnum">${stats.streak}</div><div class="statlabel">Day streak</div></div>
+        <div class="statcard"><div class="statnum">${stats.doneThisWeek}/${stats.scheduledThisWeek}</div><div class="statlabel">This week</div></div>
+      </div>
+      <div class="card">
+        <span class="eyebrow">Last four weeks</span>
+        <div class="heatgrid">${heatmapHTML}</div>
+        <div class="heatlegend">
+          <span><i class="lg done"></i>Trained</span>
+          <span><i class="lg missed"></i>Missed</span>
+          <span><i class="lg scheduled"></i>Upcoming</span>
+        </div>
+      </div>
+      <div>
+        <span class="eyebrow" style="display:block; margin:4px 0 10px 2px;">All sessions</span>
+        ${listHTML}
+      </div>
+    </main>
+  `;
+  root.querySelector('#backHomeFromHistory')?.addEventListener('click', renderHome);
+}
+
+/* ============================= INIT ============================= */
+(async function init(){
+  root.innerHTML = `<div class="empty"><div class="plateicon">◐</div>Loading Auxano…</div>`;
+  await loadState();
+  render();
+})();
+</script>
+</body>
+</html>
