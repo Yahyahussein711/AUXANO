@@ -264,6 +264,55 @@
   .exspec b{ color:var(--chalk); font-weight:500; }
   .exspec .u{ color:var(--steel); font-size:0.88em; }
 
+  /* ---------- Set chart ----------
+     The label row, the bar row and the reps row share one gap value, so a weight
+     sits dead centre over its own bar. Three separate flex rows with different
+     gaps is what makes a chart like this feel subtly wrong. */
+  .setchart{ --cgap:10px; margin-top:4px; }
+  .setchart .wlabels,
+  .setchart .plot,
+  .setchart .reps{ display:flex; gap:var(--cgap); }
+  .setchart .wlabels > *,
+  .setchart .plot > .slot,
+  .setchart .reps > *{ flex:1; min-width:0; }
+
+  .setchart .wlabels{ margin-bottom:6px; }
+  .setchart .wlabels span{
+    text-align:center; font-family:'IBM Plex Mono',monospace; font-size:13px;
+    color:var(--chalk); font-variant-numeric:tabular-nums;
+  }
+  .setchart .wlabels .under{ color:var(--danger); }
+  .setchart .wlabels .warm{ color:var(--steel); font-size:11.5px; }
+
+  .setchart .plot{ position:relative; height:104px; align-items:flex-end; }
+  .setchart .slot{
+    position:relative; height:100%; display:flex; align-items:flex-end;
+    background:rgba(255,255,255,0.038); border-radius:4px;
+  }
+  .setchart .b{ width:100%; border-radius:4px 4px 0 0; background:var(--gold); }
+  .setchart .b.under{ background:var(--danger); }
+  .setchart .b.warm{ background:none; border:1px dashed var(--gold-dim); border-bottom:none; }
+
+  .setchart .fl{
+    position:absolute; left:0; right:0; z-index:3;
+    border-top:1px dashed var(--gold); pointer-events:none;
+  }
+  .setchart .fl em{
+    position:absolute; right:0; top:-8px; font-style:normal; background:var(--panel);
+    padding:0 5px; font-family:'IBM Plex Mono',monospace; font-size:9px;
+    letter-spacing:0.11em; text-transform:uppercase; color:var(--gold);
+  }
+
+  .setchart .reps{ margin-top:8px; }
+  .setchart .reps span{
+    text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--steel);
+  }
+  .setchart .reps b{ color:var(--chalk-dim); font-weight:500; }
+  .setchart .chartunit{
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.13em;
+    text-transform:uppercase; color:var(--steel); margin-top:7px;
+  }
+
   /* Set-by-set records. Each set gets its own pill so the grouping is obvious
      without leaning on a separator character, and the row can wrap cleanly. */
   .exspec.setlist{
@@ -742,6 +791,14 @@
     .card, .tpl, .btn{ transition:transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
     .btn-primary:active{ transform:scale(0.98); }
     .chev{ transition:transform 0.15s ease, color 0.15s ease; }
+    /* bars grow in once, staggered left to right */
+    .setchart .b{ transform-origin:bottom; animation:barRise .5s cubic-bezier(.22,.9,.3,1) both; }
+    .setchart .slot:nth-child(2) .b{ animation-delay:.02s; }
+    .setchart .slot:nth-child(3) .b{ animation-delay:.06s; }
+    .setchart .slot:nth-child(4) .b{ animation-delay:.10s; }
+    .setchart .slot:nth-child(5) .b{ animation-delay:.14s; }
+    .setchart .slot:nth-child(6) .b{ animation-delay:.18s; }
+    @keyframes barRise{ from{ transform:scaleY(0); } to{ transform:scaleY(1); } }
   }
 </style>
 </head>
@@ -1462,9 +1519,60 @@ function exSpecCaps(e){
   return `${base} &nbsp;·&nbsp; <b>${num(t.weight)}</b><span class="u">${unitLabel()}</span>`;
 }
 
+/* ---------- The set chart ----------
+   Every set as a flat bar seated in its own slot, with the floor drawn across at
+   its true height on a 0-to-max axis. Weights sit above the plot and reps below —
+   never inside the bars, where they were unreadable. The three rows share one gap
+   so each label is centred over its own bar.
+
+   Returns null when a chart would be meaningless (nothing has a weight), and the
+   caller falls back to plain text. */
+function setChartHTML(e){
+  const sets = (e && e.sets) || [];
+  if(!sets.length) return null;
+  const isTime = !!e.isTime;
+  const valueOf = s => isTime ? (+s.reps || 0) : (+s.weight || 0);
+  const vals = sets.map(valueOf);
+  if(!vals.some(v => v > 0)) return null;        // bodyweight only: no axis worth drawing
+
+  // Only a recorded floor is trustworthy for a past session.
+  const floor = (!isTime && e.floor > 0) ? e.floor : 0;
+  const top = Math.max(floor, ...vals) * 1.12;
+  const pct = v => (v / top) * 100;
+
+  const labels = sets.map((s,i)=>{
+    const v = vals[i];
+    const cls = s.warmup ? 'warm' : (floor > 0 && v < floor ? 'under' : '');
+    return `<span class="${cls}">${num(v)}</span>`;
+  }).join('');
+
+  const bars = sets.map((s,i)=>{
+    const v = vals[i];
+    const cls = s.warmup ? 'warm' : (floor > 0 && v < floor ? 'under' : '');
+    return `<div class="slot"><div class="b ${cls}" style="height:${pct(v).toFixed(1)}%"></div></div>`;
+  }).join('');
+
+  const reps = sets.map(s=>{
+    if(s.warmup) return `<span>warm</span>`;
+    return isTime ? `<span>hold</span>` : `<span>×<b>${s.reps}</b></span>`;
+  }).join('');
+
+  const floorLine = floor > 0
+    ? `<div class="fl" style="bottom:${pct(floor).toFixed(1)}%"><em>floor ${num(floor)}</em></div>`
+    : '';
+
+  return `
+    <div class="setchart">
+      <div class="wlabels">${labels}</div>
+      <div class="plot">${floorLine}${bars}</div>
+      <div class="reps">${reps}</div>
+      <div class="chartunit">${isTime ? 'seconds held' : unitLabel()}</div>
+    </div>`;
+}
+
 /* What you actually lifted, set by set: "120kg×10 · 125kg×9 · 115kg×11".
-   No ranges and no averaging — a summary hides which set was which, and the
-   set-by-set record is the whole reason for keeping a log. */
+   Still used where a chart doesn't fit — bodyweight work, and the compact
+   per-session list inside the Progress view. */
 function loggedSpecCaps(e){
   const sets = e.sets || [];
   if(!sets.length) return '';
@@ -2714,7 +2822,13 @@ async function saveFocusSession(early){
     else hist.push({ date: tKey, sets: cleanSets });
 
     if(working.length && raiseFloor(exSpec, working)) raised.push(exSpec.name);
-    state.completions[tKey][exSpec.id] = { name: exSpec.name, isTime: exSpec.isTime, sets: cleanSets };
+    // Record the floor you were held to at the time. The log draws its line from
+    // this, not from floorFor() — otherwise today's floor would retroactively
+    // mark a session from three months ago as a miss.
+    state.completions[tKey][exSpec.id] = {
+      name: exSpec.name, isTime: exSpec.isTime, sets: cleanSets,
+      ...(floorBefore > 0 ? { floor: floorBefore } : {}),
+    };
   });
 
   // Nothing logged at all — don't leave an empty {_meta} shell behind.
@@ -3458,10 +3572,11 @@ function renderHistory(){
     const exHTML = exIds.map(exId=>{
       const e = entry[exId];
       const pr = meta.prs && meta.prs.indexOf(exId) > -1;
+      const chart = setChartHTML(e);
       return `
         <button class="exline tappable" data-exprog="${exId}">
           <span class="exlname">${e.name}${pr ? '<span class="pr-badge">★ PR</span>' : ''}</span>
-          <span class="exspec setlist">${loggedSpecCaps(e)}</span>
+          ${chart || `<span class="exspec setlist">${loggedSpecCaps(e)}</span>`}
         </button>`;
     }).join('');
     const flag = (meta.reason || meta.note) ? `
