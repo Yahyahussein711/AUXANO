@@ -167,6 +167,16 @@
   .plan-session{ margin-bottom:16px; }
   .plan-session h3{ font-size:15px; margin-bottom:8px; color:var(--gold); }
   .emptyplan{ padding:16px; font-size:13px; color:var(--steel); text-align:center; }
+  .unsaved{
+    background:var(--gold-wash); border:1px solid var(--gold-dim); border-radius:9px;
+    padding:9px 12px; font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--gold);
+  }
+  .sessedit{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .sessname{
+    flex:1; min-width:0; font-family:'Oswald',sans-serif; font-size:16px;
+    letter-spacing:0.03em; text-transform:uppercase; padding:9px 11px;
+  }
   .rowactions{ display:flex; justify-content:flex-end; padding:8px 0 0; border-top:1px solid var(--line); margin-top:10px; }
   .addex{ margin-top:8px; font-size:13.5px; padding:10px; }
   .plan-list{
@@ -251,6 +261,22 @@
     text-transform:uppercase; color:var(--steel); font-variant-numeric:tabular-nums;
   }
   .exspec b{ color:var(--chalk); font-weight:500; }
+  .exspec .u{ color:var(--steel); font-size:0.88em; }
+
+  /* Set-by-set records: tighter tracking and allowed to wrap, because a five-set
+     exercise is a long line at the prescription's letter-spacing. */
+  .exspec.setlist{
+    text-transform:none; letter-spacing:0.02em; font-size:12.5px;
+    display:flex; flex-wrap:wrap; align-items:baseline;
+  }
+  .setchip{ white-space:nowrap; }
+  .setchip i{ font-style:normal; color:var(--steel); padding:0 1px; }
+  .exspec .sep{ font-style:normal; color:var(--line); padding:0 6px; }
+  .setchip.warm b{ color:var(--chalk-dim); font-weight:400; }
+  .setchip.warm::after{
+    content:'w'; color:var(--gold-dim); font-size:0.75em;
+    vertical-align:super; margin-left:2px;
+  }
   /* rows that open a progress view */
   .exline.tappable{
     width:100%; text-align:left; background:none; color:inherit;
@@ -1395,6 +1421,17 @@ function weightSteps(){ return unitDef().steps; }
 
 function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
 
+/* The plan rows are shared by the first-run wizard and the Plan page. Both keep
+   an editable draft with the same shape, so the row code works against whichever
+   one is active rather than being duplicated. */
+function editCtx(){ return planDraft || wizard; }
+function editRepaint(){ if(planDraft) renderPlan(); else renderWizard(); }
+function editFloor(exId){
+  const d = editCtx();
+  if(d && d.floors && d.floors[exId] > 0) return d.floors[exId];
+  return planDraft ? 0 : floorFor(exId);
+}
+
 function repRange(e){
   const range = e.repMin===e.repMax ? `${e.repMin}` : `${e.repMin}–${e.repMax}`;
   return range + (e.isTime ? 's' : '');
@@ -1404,37 +1441,37 @@ function exSummary(e){ return `${e.sets} × ${repRange(e)}`; }
 function exSummaryHTML(e){
   return `<span class="xs-sets">${e.sets}</span><span class="xs-x">×</span><span class="xs-reps">${repRange(e)}</span>`;
 }
-// Spelled-out form for the today card: "3 SETS · 4–6 REPS".
+/* The today card is a prescription, not a record, so the rep range stays a range
+   — that IS the target. But it names the exact weight to load, so you never have
+   to work it out at the rack. */
 function exSpecCaps(e){
-  return `<b>${e.sets}</b> Sets &nbsp;·&nbsp; <b>${repRange(e)}</b> ${e.isTime ? 'Hold' : 'Reps'}`;
+  const base = `<b>${e.sets}</b> Sets &nbsp;·&nbsp; <b>${repRange(e)}</b> ${e.isTime ? 'Hold' : 'Reps'}`;
+  if(e.isTime) return base;
+  const t = suggestTarget(e);
+  if(t.weight === null || t.weight === undefined) return base;
+  return `${base} &nbsp;·&nbsp; <b>${num(t.weight)}</b><span class="u">${unitLabel()}</span>`;
 }
 
-/* Same idiom for a session you've already done, built from what you actually
-   lifted: "3 SETS · 100 KG · 5–6 REPS". Every row takes this shape — when the
-   weight or the reps varied across sets, that value becomes a range rather than
-   breaking the row into a per-set list. */
+/* What you actually lifted, set by set: "120kg×10 · 125kg×9 · 115kg×11".
+   No ranges and no averaging — a summary hides which set was which, and the
+   set-by-set record is the whole reason for keeping a log. */
 function loggedSpecCaps(e){
   const sets = e.sets || [];
   if(!sets.length) return '';
-  const unit = e.isTime ? 'Hold' : 'Reps';
-  const sfx  = e.isTime ? 's' : '';
-
-  const range = (vals, suffix)=>{
-    const lo = Math.min(...vals), hi = Math.max(...vals);
-    return (lo === hi ? num(lo) : `${num(lo)}–${num(hi)}`) + (suffix || '');
-  };
-
-  const weights = sets.map(s=> s.weight);
-  const reps    = sets.map(s=> s.reps);
-  const weightPart = Math.max(...weights) > 0
-    ? `<b>${range(weights)}</b> ${unitLabel()} &nbsp;·&nbsp; `
-    : '';
-  return `<b>${sets.length}</b> Sets &nbsp;·&nbsp; ${weightPart}<b>${range(reps, sfx)}</b> ${unit}`;
+  const sfx = e.isTime ? 's' : '';
+  return sets.map(s=>{
+    const w = +s.weight || 0;
+    const r = s.reps;
+    const body = w > 0
+      ? `<b>${num(w)}</b><span class="u">${unitLabel()}</span><i>×</i><b>${r}${sfx}</b>`
+      : `<b>${r}${sfx}</b>`;
+    return `<span class="setchip${s.warmup ? ' warm' : ''}"${s.warmup ? ' title="Warm-up set"' : ''}>${body}</span>`;
+  }).join('<i class="sep">·</i>');
 }
 
 function planRowHTML(sid, idx, e){
   const key = `${sid}|${idx}`;
-  const open = wizard.openEx === key;
+  const open = editCtx().openEx === key;
   const step = e.isTime ? 5 : 1;
   const repMaxCap = e.isTime ? 300 : 50;
   const unitNoun = e.isTime ? 'seconds' : 'reps';
@@ -1481,7 +1518,7 @@ function planRowHTML(sid, idx, e){
       <div class="rowactions">
         <button class="btn-text floorreset" data-removeex="${key}">Remove exercise</button>
       </div>
-      ${!e.isTime && floorFor(e.id) > 0 ? `
+      ${!planDraft && !e.isTime && floorFor(e.id) > 0 ? `
         <div class="floorline">
           <div>
             <span class="ellabel">Floor</span>
@@ -1630,11 +1667,14 @@ function promptAddExercise(sessionId){
   const commit = ()=>{
     const name = overlay.querySelector('#aeName').value.trim();
     if(!name) return;
-    const taken = (wizard.exercises[sessionId]||[]).map(e=>e.id);
-    if(!wizard.exercises[sessionId]) wizard.exercises[sessionId] = [];
-    wizard.exercises[sessionId].push(defaultExercise(sessionId, name, taken));
+    const d = editCtx();
+    if(!d.exercises) d.exercises = {};
+    if(!d.exercises[sessionId]) d.exercises[sessionId] = [];
+    const taken = d.exercises[sessionId].map(e=>e.id);
+    d.exercises[sessionId].push(defaultExercise(sessionId, name, taken));
+    if(planDraft) planDirty();
     close();
-    renderWizard();
+    editRepaint();
   };
   overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
   overlay.querySelector('#aeCancel').addEventListener('click', close);
@@ -1644,7 +1684,7 @@ function promptAddExercise(sessionId){
 }
 
 function adjustEx(sid, idx, field, delta){
-  const e = wizard.exercises[sid][idx];
+  const e = editCtx().exercises[sid][idx];
   const step = e.isTime ? 5 : 1;
   if(field==='sets'){
     e.sets = clamp(e.sets + delta, 1, 10);
@@ -1669,7 +1709,7 @@ function repaintPlanRow(key){
   if(!el) return null;
   const [sid, idxStr] = key.split('|');
   const idx = parseInt(idxStr, 10);
-  el.outerHTML = planRowHTML(sid, idx, wizard.exercises[sid][idx]);
+  el.outerHTML = planRowHTML(sid, idx, editCtx().exercises[sid][idx]);
   return bindPlanRow(key);
 }
 
@@ -1677,11 +1717,11 @@ function bindPlanRow(key){
   const el = root.querySelector(`.planrow[data-row="${key}"]`);
   if(!el) return null;
   el.querySelector('[data-exrow]')?.addEventListener('click', ()=>{
-    const prev = wizard.openEx;
-    wizard.openEx = (prev === key) ? null : key;
+    const prev = editCtx().openEx;
+    editCtx().openEx = (prev === key) ? null : key;
     if(prev && prev !== key) repaintPlanRow(prev);
     const fresh = repaintPlanRow(key);
-    if(wizard.openEx && fresh){
+    if(editCtx().openEx && fresh){
       const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
       fresh.scrollIntoView?.({block:'nearest', behavior: calm ? 'auto' : 'smooth'});
     }
@@ -1690,6 +1730,7 @@ function bindPlanRow(key){
     btn.addEventListener('click', ()=>{
       const [sid, idxStr, field, deltaStr] = btn.dataset.adj.split('|');
       adjustEx(sid, parseInt(idxStr,10), field, parseFloat(deltaStr));
+      if(planDraft){ planDirty(); markPlanDirty(); }
       repaintPlanRow(key);
     });
   });
@@ -1699,12 +1740,13 @@ function bindPlanRow(key){
   el.querySelector('[data-removeex]')?.addEventListener('click', (ev)=>{
     const [sid, idxStr] = ev.currentTarget.dataset.removeex.split('|');
     const idx = parseInt(idxStr, 10);
-    const e = wizard.exercises[sid][idx];
+    const e = editCtx().exercises[sid][idx];
     if(!e) return;
     const drop = ()=>{
-      wizard.exercises[sid].splice(idx, 1);
-      wizard.openEx = null;
-      renderWizard();
+      editCtx().exercises[sid].splice(idx, 1);
+      editCtx().openEx = null;
+      if(planDraft) planDirty();
+      editRepaint();
     };
     // Dropping something you've actually trained is worth a question; a
     // just-added exercise is not.
@@ -1726,7 +1768,8 @@ function bindPlanRow(key){
       'Reset floor',
       async ()=>{
         clearFloor(exId);
-        delete wizard.baselines[exId];
+        if(editCtx().baselines) delete editCtx().baselines[exId];
+        if(editCtx().floors) delete editCtx().floors[exId];
         await saveState();
         repaintPlanRow(key);
       },
@@ -2046,23 +2089,29 @@ const ICON_LOG = `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" st
   stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
   <path d="M4 6.5h16M4 12h16M4 17.5h10"/></svg>`;
 
+const ICON_PLAN = `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+  stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M5 3.5h11l3.5 3.5v13.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1Z"/>
+  <path d="M8 10h8M8 14h8M8 18h5"/></svg>`;
+
 function tabbarHTML(active){
+  const tab = (key, icon, label)=> `
+      <button class="tab ${active===key?'on':''}" data-tab="${key}" ${active===key?'aria-current="page"':''}>
+        ${icon}<span class="tlabel">${label}</span>
+      </button>`;
   return `
     <nav class="tabbar">
-      <button class="tab ${active==='today'?'on':''}" data-tab="today" ${active==='today'?'aria-current="page"':''}>
-        ${ICON_TODAY}<span class="tlabel">Today</span>
-      </button>
-      <button class="tab ${active==='log'?'on':''}" data-tab="log" ${active==='log'?'aria-current="page"':''}>
-        ${ICON_LOG}<span class="tlabel">Log</span>
-      </button>
+      ${tab('today', ICON_TODAY, 'Today')}
+      ${tab('plan',  ICON_PLAN,  'Plan')}
+      ${tab('log',   ICON_LOG,   'Log')}
     </nav>
   `;
 }
 function bindTabs(){
   root.querySelectorAll('[data-tab]').forEach(b=>{
     b.addEventListener('click', ()=>{
-      if(b.dataset.tab === 'today') renderHome();
-      else renderHistory();
+      const go = { today: renderHome, plan: renderPlan, log: renderHistory }[b.dataset.tab];
+      if(go) go();
     });
   });
 }
@@ -2143,7 +2192,6 @@ function renderHome(){
   root.innerHTML = `
     <header class="top">
       <div class="brand"><span class="bar"></span>AUXANO</div>
-      <button class="iconbtn" id="resetBtn" aria-label="Edit routine">⚙</button>
     </header>
     <main>
       ${storageIsDurable() ? '' : `
@@ -2160,25 +2208,13 @@ function renderHome(){
         </div>
         <div class="weekstrip">${weekStripHTML()}</div>
       </div>
-
-      <button class="routinerow" id="resetBtn2">
-        <div>
-          <div class="rname">${routineName()}</div>
-          <div class="rmeta">${weekTotal} day${weekTotal===1?'':'s'} a week · ${planSessions().length} session types</div>
-        </div>
-        <span class="chev-r">›</span>
-      </button>
     </main>
     ${tabbarHTML('today')}
   `;
 
   root.querySelectorAll('[data-exprog]').forEach(b=>
     b.addEventListener('click', ()=> renderExercise(b.dataset.exprog, 'home')));
-  root.querySelector('#resetBtn')?.addEventListener('click', enterEditSetup);
-  root.querySelector('#resetBtn2')?.addEventListener('click', enterEditSetup);
-  root.querySelector('#resetBtn3')?.addEventListener('click', ()=>{
-    enterEditSetup(); wizard.step = 4; renderWizard();
-  });
+  root.querySelector('#resetBtn3')?.addEventListener('click', renderPlan);
   root.querySelector('#startSession')?.addEventListener('click', ()=> renderSession(session.id, false));
   root.querySelector('#reopenSession')?.addEventListener('click', ()=>{ if(reviewId) renderSession(reviewId, true); });
   bindTabs();
@@ -2787,6 +2823,288 @@ function paintFinish(early){
   });
 }
 
+/* ============================= PLAN =============================
+   A full editor for the routine, held entirely in a draft. Nothing here touches
+   saved state until Save is pressed — you can rename, add, delete, reorder and
+   change your mind freely, and Discard puts it all back. */
+let planDraft = null;
+
+function planDraftFromState(){
+  const sessions = planSessions().map(s=>({ id:s.id, name:s.name }));
+  const exercises = {};
+  sessions.forEach(s=>{ exercises[s.id] = JSON.parse(JSON.stringify(exercisesFor(s.id))); });
+  return {
+    routineName: routineName(),
+    unit: unitKey(),
+    dayMap: { ...(state.setup ? state.setup.dayMap : {}) },
+    sessions, exercises,
+    floors: { ...state.floors },
+    openEx: null,
+    dirty: false,
+  };
+}
+function planDirty(){ if(planDraft) planDraft.dirty = true; }
+
+function planHasChanges(){
+  if(!planDraft) return false;
+  return planDraft.dirty;
+}
+
+function renderPlan(){
+  if(!state.setup) return renderWizard();      // first run still uses the wizard
+  if(!planDraft) planDraft = planDraftFromState();
+  const d = planDraft;
+  const sortedDays = DAY_ORDER.filter(k => d.dayMap[k]);
+
+  const sessionCards = d.sessions.map((s, si)=> `
+    <div class="plan-session" data-sess="${s.id}">
+      <div class="sessedit">
+        <input type="text" class="sessname" data-sessname="${s.id}" value="${s.name}"
+               maxlength="32" placeholder="Session name" aria-label="Session name">
+        <button class="btn-text floorreset" data-delsess="${s.id}"
+                ${d.sessions.length<=1?'disabled':''}>Delete</button>
+      </div>
+      <div class="plan-list">
+        ${d.exercises[s.id].length
+          ? d.exercises[s.id].map((e,idx)=> planRowHTML(s.id, idx, e)).join('')
+          : '<p class="emptyplan">No exercises yet.</p>'}
+      </div>
+      <button class="btn btn-ghost addex" data-addex="${s.id}">+ Add exercise</button>
+    </div>`).join('');
+
+  const weighted = [];
+  d.sessions.forEach(s=> d.exercises[s.id].forEach(e=>{ if(!e.isTime) weighted.push(e); }));
+
+  root.innerHTML = `
+    <header class="top">
+      <div class="brand"><span class="bar"></span>PLAN</div>
+      ${d.dirty ? '<button class="reset" id="planDiscard">Discard</button>' : ''}
+    </header>
+    <main>
+      ${d.dirty ? '<div class="unsaved">Unsaved changes</div>' : ''}
+
+      <div class="card">
+        <span class="eyebrow">Routine name</span>
+        <input type="text" id="planName" value="${d.routineName}" maxlength="40"
+               style="margin-top:8px;" aria-label="Routine name">
+        <div class="unitrow">
+          <span class="ellabel">Weights in</span>
+          <div class="unittoggle">
+            <button data-punit="kg" class="${d.unit==='kg'?'on':''}" aria-pressed="${d.unit==='kg'}">Kilograms</button>
+            <button data-punit="lb" class="${d.unit==='lb'?'on':''}" aria-pressed="${d.unit==='lb'}">Pounds</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">Training days</span>
+        <p class="fchint" style="margin:6px 0 0;">Tap a day to train it, then choose which session it runs.</p>
+        <div class="daygrid" style="margin-top:12px;">
+          ${DAYS.map(dd=>`
+            <div class="daychip ${d.dayMap[dd.k]?'active':''}" data-pday="${dd.k}"
+                 role="button" tabindex="0" aria-pressed="${!!d.dayMap[dd.k]}"
+                 aria-label="${dd.full}">${dd.label}</div>`).join('')}
+        </div>
+        ${sortedDays.length ? `
+          <div style="margin-top:14px;">
+            ${sortedDays.map(k=>`
+              <div class="maprow">
+                <div class="dname">${DAYS.find(x=>x.k===k).full}</div>
+                <select data-pmap="${k}">
+                  ${d.sessions.map(s=>`<option value="${s.id}" ${s.id===d.dayMap[k]?'selected':''}>${s.name||'Untitled'}</option>`).join('')}
+                </select>
+              </div>`).join('')}
+          </div>`
+          : '<p class="emptyplan">No training days selected.</p>'}
+      </div>
+
+      <span class="eyebrow" style="display:block; margin:20px 0 8px 2px;">Sessions</span>
+      ${sessionCards}
+      <button class="btn btn-ghost" id="addSess" style="margin-top:4px;">+ Add session</button>
+
+      ${weighted.length ? `
+        <span class="eyebrow" style="display:block; margin:22px 0 8px 2px;">Starting weights</span>
+        <p class="fchint" style="margin:0 0 10px 2px;">
+          Each lift's floor — the weight Auxano won't suggest going under. Blank means
+          it's set from your next logged session.
+        </p>
+        <div class="plan-list">
+          ${weighted.map(e=>`
+            <div class="baserow">
+              <div class="basename">${e.name}<span class="basespec">${exSummary(e)}</span></div>
+              <div class="baseinput">
+                <input type="number" inputmode="decimal" min="0" step="0.5"
+                       data-pfloor="${e.id}" placeholder="—"
+                       aria-label="Floor for ${e.name}"
+                       value="${d.floors[e.id] > 0 ? d.floors[e.id] : ''}">
+                <span class="baseunit">${UNITS[d.unit].label}</span>
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+
+      <div class="stickybar" style="display:flex; gap:10px;">
+        <button class="btn btn-primary" id="planSave" ${d.dirty?'':'disabled'}>
+          ${d.dirty ? 'Save plan' : 'Saved'}
+        </button>
+      </div>
+    </main>
+    ${tabbarHTML('plan')}
+  `;
+
+  bindPlanPage();
+  bindTabs();
+}
+
+function bindPlanPage(){
+  const d = planDraft;
+
+  root.querySelector('#planName')?.addEventListener('input', (e)=>{
+    d.routineName = e.target.value; planDirty(); markPlanDirty();
+  });
+
+  root.querySelectorAll('[data-punit]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const next = b.dataset.punit;
+      if(next === d.unit) return;
+      // Convert the draft's own numbers now; stored history is converted on Save.
+      const conv = v => convertWeight(v, d.unit, next);
+      const steps = UNITS[next].steps;
+      const nearest = v => steps.reduce((bst,x)=> Math.abs(x-v) < Math.abs(bst-v) ? x : bst, steps[0]);
+      Object.keys(d.floors).forEach(k=>{ d.floors[k] = conv(d.floors[k]); });
+      Object.keys(d.exercises).forEach(sid=> d.exercises[sid].forEach(e=>{
+        if(e.inc) e.inc = nearest(conv(e.inc));
+      }));
+      d.unit = next; planDirty(); renderPlan();
+    });
+  });
+
+  root.querySelectorAll('[data-pday]').forEach(el=>{
+    const toggle = ()=>{
+      const k = el.dataset.pday;
+      if(d.dayMap[k]) delete d.dayMap[k];
+      else d.dayMap[k] = d.sessions[0] ? d.sessions[0].id : null;
+      if(d.dayMap[k] === null) delete d.dayMap[k];
+      planDirty(); renderPlan();
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); toggle(); } });
+  });
+
+  root.querySelectorAll('[data-pmap]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{ d.dayMap[sel.dataset.pmap] = sel.value; planDirty(); markPlanDirty(); });
+  });
+
+  root.querySelectorAll('[data-sessname]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const s = d.sessions.find(x=> x.id === inp.dataset.sessname);
+      if(s){ s.name = inp.value; planDirty(); markPlanDirty(); }
+    });
+  });
+
+  root.querySelectorAll('[data-delsess]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const id = b.dataset.delsess;
+      const s = d.sessions.find(x=> x.id === id);
+      const drop = ()=>{
+        d.sessions = d.sessions.filter(x=> x.id !== id);
+        delete d.exercises[id];
+        Object.keys(d.dayMap).forEach(k=>{
+          if(d.dayMap[k] === id) d.dayMap[k] = d.sessions[0] ? d.sessions[0].id : undefined;
+          if(!d.dayMap[k]) delete d.dayMap[k];
+        });
+        d.openEx = null; planDirty(); renderPlan();
+      };
+      if((d.exercises[id] || []).length){
+        showConfirm(`Delete <b>${s ? s.name : 'this session'}</b> and its ${d.exercises[id].length} exercises?<br><br>Nothing is saved until you press Save.`,
+          'Delete', drop, { danger:true });
+      } else drop();
+    });
+  });
+
+  root.querySelector('#addSess')?.addEventListener('click', ()=>{
+    const s = newCustomSession(d.sessions.length);
+    s.name = 'Session ' + (d.sessions.length + 1);
+    d.sessions.push(s);
+    d.exercises[s.id] = [];
+    planDirty(); renderPlan();
+  });
+
+  root.querySelectorAll('[data-addex]').forEach(b=>{
+    b.addEventListener('click', ()=> promptAddExercise(b.dataset.addex));
+  });
+  root.querySelectorAll('.planrow[data-row]').forEach(el=> bindPlanRow(el.dataset.row));
+
+  root.querySelectorAll('[data-pfloor]').forEach(inp=>{
+    const commit = ()=>{
+      const v = parseFloat(inp.value);
+      if(isFinite(v) && v > 0) d.floors[inp.dataset.pfloor] = v;
+      else delete d.floors[inp.dataset.pfloor];
+      planDirty(); markPlanDirty();
+    };
+    inp.addEventListener('input', commit);
+    inp.addEventListener('change', commit);
+  });
+
+  root.querySelector('#planDiscard')?.addEventListener('click', ()=>{
+    showConfirm('Throw away your unsaved changes?', 'Discard', ()=>{
+      planDraft = null; renderPlan();
+    }, { danger:true });
+  });
+
+  root.querySelector('#planSave')?.addEventListener('click', savePlan);
+}
+
+// Light-touch dirty marker so typing doesn't trigger a full re-render mid-keystroke.
+function markPlanDirty(){
+  const btn = root.querySelector('#planSave');
+  if(btn){ btn.disabled = false; btn.textContent = 'Save plan'; }
+  if(!root.querySelector('.unsaved')){
+    const m = root.querySelector('main');
+    if(m) m.insertAdjacentHTML('afterbegin', '<div class="unsaved">Unsaved changes</div>');
+    const h = root.querySelector('header.top');
+    if(h && !root.querySelector('#planDiscard')){
+      h.insertAdjacentHTML('beforeend', '<button class="reset" id="planDiscard">Discard</button>');
+      root.querySelector('#planDiscard').addEventListener('click', ()=>{
+        showConfirm('Throw away your unsaved changes?', 'Discard', ()=>{
+          planDraft = null; renderPlan();
+        }, { danger:true });
+      });
+    }
+  }
+}
+
+async function savePlan(){
+  const d = planDraft;
+  const named = d.sessions.filter(s=> s.name.trim());
+  if(!named.length) return planError('Give at least one session a name.');
+  if(!Object.keys(d.dayMap).length) return planError('Pick at least one training day.');
+
+  const next = normalizeSetup({
+    templateId: state.setup ? state.setup.templateId : 'custom',
+    routineName: d.routineName.trim() || 'My routine',
+    sessions: named.map(s=>({ id:s.id, name:s.name.trim() })),
+    dayMap: d.dayMap,
+    exercises: d.exercises,
+  });
+  if(!next) return planError("That plan can't be saved — every session needs at least one exercise.");
+
+  // Unit change converts everything already recorded; the draft is already in
+  // the new unit, so it is applied first and then overwritten by the draft.
+  if(d.unit !== unitKey()) await setUnit(d.unit);
+
+  state.setup = next;
+  state.floors = { ...d.floors };
+  await saveState();
+  planDraft = null;
+  renderPlan();
+  const btn = root.querySelector('#planSave');
+  if(btn) btn.textContent = 'Saved';
+}
+
+function planError(msg){
+  showConfirm(msg, 'OK', ()=>{});
+}
+
 /* ============================= EXERCISE PROGRESS =============================
    The payoff for logging: one lift, its trend, and what it would take to beat. */
 function findExSpec(exId){
@@ -2823,7 +3141,7 @@ function renderExercise(exId, backTo){
           ${d.toLocaleDateString(undefined,{ weekday:'short', day:'numeric', month:'short' })}
           ${pr ? '<span class="pr-badge">★ Best</span>' : ''}
         </span>
-        <span class="exspec">${loggedSpecCaps({ isTime: spec && spec.isTime, sets: h.sets })}</span>
+        <span class="exspec setlist">${loggedSpecCaps({ isTime: spec && spec.isTime, sets: h.sets })}</span>
       </div>`;
   }).join('');
 
@@ -3133,7 +3451,7 @@ function renderHistory(){
       return `
         <button class="exline tappable" data-exprog="${exId}">
           <span class="exlname">${e.name}${pr ? '<span class="pr-badge">★ PR</span>' : ''}</span>
-          <span class="exspec">${loggedSpecCaps(e)}</span>
+          <span class="exspec setlist">${loggedSpecCaps(e)}</span>
         </button>`;
     }).join('');
     const flag = (meta.reason || meta.note) ? `
