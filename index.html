@@ -282,7 +282,9 @@
     text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
     color:var(--chalk); font-variant-numeric:tabular-nums; white-space:nowrap;
   }
-  .setchart .wlabels i{ font-style:normal; color:var(--steel); padding:0 1px; }
+  .setchart .wlabels .r{
+    font-size:0.78em; vertical-align:super; color:var(--gold-dim); margin-left:1px;
+  }
   .setchart .wlabels .under{ color:var(--danger); }
   .setchart .wlabels .warm{ color:var(--steel); }
 
@@ -315,14 +317,18 @@
   /* Set-by-set records, minimal: spacing does the grouping, colour carries the
      floor. No boxes, no chart — the log is scanned, not studied. */
   .setline{
-    display:flex; flex-wrap:wrap; gap:3px 16px;
-    font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    display:flex; flex-wrap:wrap; gap:5px 18px;
+    font-family:'IBM Plex Mono',monospace; font-size:14px;
     font-variant-numeric:tabular-nums; color:var(--chalk);
   }
   .setline .st{ white-space:nowrap; }
-  .setline .st i{ font-style:normal; color:var(--steel); padding:0 2px; }
+  .setline .st .r{
+    font-size:0.8em; vertical-align:super; color:var(--gold-dim); margin-left:1.5px;
+  }
   .setline .st.under{ color:var(--danger); }
+  .setline .st.under .r{ color:var(--danger); opacity:0.8; }
   .setline .st.warm{ color:var(--steel); }
+  .setline .st.warm .r{ color:var(--steel); }
   /* rows that open a progress view */
   .exline.tappable{
     width:100%; text-align:left; background:none; color:inherit;
@@ -657,6 +663,64 @@
   }
 
   /* ---------- Floor note in the gym ---------- */
+  /* ---------- Target card ---------- */
+  .targetcard{
+    width:100%; max-width:330px; margin:14px 0 2px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; text-align:left;
+  }
+  .targetcard.rule-progress{ border-color:var(--patina); }
+  .targetcard.rule-stall, .targetcard.rule-return{ border-color:var(--gold-dim); }
+  .targetcard.first{ padding:12px 14px; }
+  .tgtrow{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    padding:11px 14px 9px;
+  }
+  .tgtlbl{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.16em;
+    text-transform:uppercase; color:var(--steel);
+  }
+  .tgtval{
+    font-family:'IBM Plex Mono',monospace; font-size:21px; font-weight:600;
+    color:var(--chalk); font-variant-numeric:tabular-nums;
+  }
+  .tgtval .tu{ font-size:0.6em; color:var(--steel); margin-left:1px; }
+  .tgtval .tx{ color:var(--steel); padding:0 5px; font-size:0.72em; }
+  .tgthead{
+    width:100%; display:flex; align-items:center; gap:9px; text-align:left;
+    background:rgba(255,255,255,0.028); border:none; border-top:1px solid var(--line);
+    padding:10px 14px; color:var(--chalk-dim); font-size:13px;
+  }
+  .tgticon{
+    width:19px; height:19px; flex-shrink:0; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; background:var(--panel-raised); color:var(--gold);
+  }
+  .rule-progress .tgticon{ color:var(--patina); }
+  .rule-stall .tgticon, .rule-return .tgticon{ color:var(--danger); }
+  .tgttext{ flex:1; min-width:0; color:var(--chalk); }
+  .tgtchev{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--gold); flex-shrink:0;
+  }
+  .tgtwhy{
+    padding:11px 14px 13px; font-size:13px; line-height:1.55; color:var(--chalk-dim);
+    border-top:1px solid var(--line);
+  }
+  .targetcard.first .tgtwhy{ border-top:none; padding:0; }
+  .tgtev{ list-style:none; margin-top:10px; display:flex; flex-direction:column; gap:5px; }
+  .tgtev li{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.04em;
+    color:var(--steel); padding-left:13px; position:relative;
+  }
+  .tgtev li::before{
+    content:''; position:absolute; left:0; top:6px;
+    width:5px; height:5px; border-radius:50%; background:var(--line);
+  }
+  .tgtev li.ev-rule::before, .tgtev li.ev-stall::before{ background:var(--gold-dim); }
+  .tgtev li.ev-floor::before{ background:var(--gold); }
+  .tgtev li.ev-clamp::before{ background:var(--danger); }
+
   .floornote{
     font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.11em;
     text-transform:uppercase; margin-top:5px; min-height:14px;
@@ -1294,6 +1358,107 @@ async function afterTimeChange(){
   else render();
 }
 
+/* ---------- Simulated training history ----------
+   Rather than inventing plausible-looking numbers, this walks forward day by
+   day and asks the app's own suggestTarget() what to lift, then decides how the
+   session went. The result obeys the ratchet because it was produced by it. */
+function startingWeight(e){
+  const base = { barbell:40, machine:35, cable:20, dumbbell:12, bodyweight:0, other:20 }[e.equipment] || 20;
+  const n = e.name.toLowerCase();
+  let f = 1;
+  if(/deadlift/.test(n)) f = 1.6;
+  else if(/squat|leg press/.test(n)) f = 1.3;
+  else if(/row|pulldown|pull-?up/.test(n)) f = 1.1;
+  else if(/curl|raise|fly|pushdown|face pull/.test(n)) f = 0.55;
+  return roundToPlate(base * f, unitKey());
+}
+
+function seedDemo(weeks){
+  // Deterministic, so the same history appears every time it is seeded.
+  let seed = 20260920;
+  const rnd = ()=>{ seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+
+  state.history = {}; state.completions = {}; state.floors = {};
+  invalidatePlans();
+
+  const totalDays = weeks * 7;
+  const deloadWeek = Math.floor(weeks * 0.7);      // one lighter week near the end
+  let sessions = 0, missed = 0, badDays = 0, deloads = 0;
+
+  for(let back = totalDays - 1; back >= 0; back--){
+    const d = addDays(nowDate(), -back);
+    const dk = dateKey(d);
+    const sid = state.setup.dayMap[weekdayKey(d)];
+    if(!sid) continue;
+
+    const week = Math.floor((totalDays - 1 - back) / 7);
+    if(rnd() < 0.08){ missed++; continue; }          // life happens
+
+    const isDeload = week === deloadWeek;
+    const roll = rnd();
+    const badDay = !isDeload && roll < 0.06;
+    if(isDeload) deloads++;
+    if(badDay) badDays++;
+
+    const entry = { _meta:{ sessionId:sid, sessionName:sessionName(sid), note:'', reason:'', prs:[] } };
+    const prs = [];
+
+    exercisesFor(sid).forEach(exSpec=>{
+      const target = suggestTarget(exSpec, dk);
+      let weight = target.weight;
+      if(weight === null || weight === undefined) weight = startingWeight(exSpec);
+
+      const floorBefore = floorFor(exSpec.id);
+      if(isDeload) weight = roundToPlate(weight * 0.9, unitKey());
+      if(badDay)   weight = roundToPlate(weight * 0.85, unitKey());
+
+      // how the sets actually went
+      const r = rnd();
+      const sets = [];
+      if(!exSpec.isTime && exSpec.equipment === 'barbell' && weight > 0){
+        sets.push({ weight: roundToPlate(weight * 0.5, unitKey()), reps: exSpec.repMin, warmup:true });
+      }
+      for(let i = 0; i < exSpec.sets; i++){
+        let reps;
+        // Roughly 45% of sessions clear the top of the range, which is what a
+        // real double-progression block looks like — at 14% the squat only
+        // gained 5kg across three months, which is not a believable block.
+        if(isDeload)      reps = exSpec.repMin;
+        else if(r < 0.45) reps = exSpec.repMax;                                   // everything clicked
+        else if(r < 0.78) reps = i === exSpec.sets - 1 ? exSpec.repMax - 1 : exSpec.repMax;
+        else if(r < 0.92) reps = Math.max(exSpec.repMin, exSpec.repMax - 2);
+        else              reps = Math.max(1, exSpec.repMin - 1);                  // stalled
+        sets.push({ weight, reps });
+      }
+
+      const working = sets.filter(s=>!s.warmup);
+      if(!exSpec.isTime && isPR(exSpec.id, working, dk)) prs.push(exSpec.id);
+
+      if(!state.history[exSpec.id]) state.history[exSpec.id] = [];
+      state.history[exSpec.id].push({ date: dk, sets });
+      if(working.length) raiseFloor(exSpec, working);
+
+      entry[exSpec.id] = {
+        name: exSpec.name, isTime: exSpec.isTime, sets,
+        ...(floorBefore > 0 ? { floor: floorBefore } : {}),
+      };
+    });
+
+    entry._meta.prs = prs;
+    if(badDay){
+      entry._meta.reason = pick(BAD_DAY_REASONS.filter(x=>x!=='Deload'));
+      entry._meta.note = pick(['felt flat all session','slept badly','short on time','back was tight']);
+    } else if(isDeload){
+      entry._meta.reason = 'Deload';
+      entry._meta.note = 'planned lighter week';
+    }
+    state.completions[dk] = entry;
+    sessions++;
+  }
+  return { sessions, missed, badDays, deloads, weeks };
+}
+
 function paintDevBar(){
   if(!state || !state.dev || !state.dev.panel){ devBar.innerHTML = ''; devBar.className = ''; return; }
   const off = state.dev.dayOffset || 0;
@@ -1312,6 +1477,7 @@ function paintDevBar(){
         <button data-shift="1" aria-label="Forward one day">+1</button>
         <button data-shift="7" aria-label="Forward one week">+7</button>
         <button id="devReset" ${off ? '' : 'disabled'} aria-label="Back to the real date">Now</button>
+        <button id="devSeed" aria-label="Fill with three months of simulated training">Seed 3m</button>
         <button id="devClose" aria-label="Hide time travel">✕</button>
       </div>
     </div>
@@ -1319,6 +1485,23 @@ function paintDevBar(){
   devBar.querySelectorAll('[data-shift]').forEach(b=>
     b.addEventListener('click', ()=> shiftDays(parseInt(b.dataset.shift,10))));
   devBar.querySelector('#devReset')?.addEventListener('click', resetTime);
+  devBar.querySelector('#devSeed')?.addEventListener('click', ()=>{
+    if(!state.setup) return;
+    showConfirm(
+      `Replace your history with three months of simulated training?<br><br>` +
+      `Sessions are generated by running the app's own progression forward day by day, ` +
+      `so the floors and targets are genuinely earned. <b>Your current log and floors are erased.</b>`,
+      'Simulate',
+      async ()=>{
+        const r = seedDemo(12);
+        await saveState();
+        renderHistory();
+        backupStat(`Simulated ${r.weeks} weeks — ${r.sessions} sessions, ` +
+                   `${r.missed} missed, ${r.badDays} bad days, ${r.deloads} deload.`);
+      },
+      { danger:true }
+    );
+  });
   devBar.querySelector('#devClose')?.addEventListener('click', async ()=>{
     state.dev.panel = false;
     await saveState();
@@ -1485,6 +1668,7 @@ async function setUnit(next){
     Object.keys(wizard.baselines).forEach(k=>{ wizard.baselines[k] = conv(wizard.baselines[k]); });
   }
 
+  invalidatePlans();
   state.settings.unit = next;
   state.settings.bar = UNITS[next].bar;
   await saveState();
@@ -1626,7 +1810,7 @@ function setChartHTML(e){
   const labels = sets.map((s,i)=>{
     const v = vals[i];
     const cls = s.warmup ? 'warm' : (floor > 0 && v < floor ? 'under' : '');
-    const tail = isTime ? 's' : `<i>×</i>${s.reps}`;
+    const tail = isTime ? 's' : `<span class="r">${s.reps}</span>`;
     return `<span class="${cls}">${num(v)}${tail}</span>`;
   }).join('');
 
@@ -1658,7 +1842,9 @@ function loggedSpecCaps(e){
   return sets.map(s=>{
     const w = +s.weight || 0;
     const cls = s.warmup ? 'warm' : (floor > 0 && w < floor ? 'under' : '');
-    const body = w > 0 ? `${num(w)}<i>×</i>${s.reps}${sfx}` : `${s.reps}${sfx}`;
+    // Reps ride raised on the weight, like a footnote — the weight is the number
+    // you're actually reading, so it keeps full size and nothing competes with it.
+    const body = w > 0 ? `${num(w)}<span class="r">${s.reps}${sfx}</span>` : `${s.reps}${sfx}`;
     return `<span class="st ${cls}"${s.warmup ? ' title="Warm-up set"' : ''}>${body}</span>`;
   }).join('');
 }
@@ -1962,6 +2148,7 @@ function bindPlanRow(key){
       'Reset floor',
       async ()=>{
         clearFloor(exId);
+        invalidatePlans();
         if(editCtx().baselines) delete editCtx().baselines[exId];
         if(editCtx().floors) delete editCtx().floors[exId];
         await saveState();
@@ -2241,37 +2428,304 @@ function sparkline(points, w, h){
     </svg>`;
 }
 
-function suggestTarget(exSpec){
-  const floor = floorFor(exSpec.id);
-  const last = lastSession(exSpec.id);
+/* ===================== PROGRESSION ENGINE =====================
+   One pure function decides what to lift next. It takes everything it needs as
+   arguments — no globals, no clock — so the same inputs always give the same
+   answer and it can be tested exhaustively or run off the main thread.
 
-  if(!last || !last.sets.length){
-    return floor > 0
-      ? { weight: floor, note: `Starting from your baseline of ${num(floor)}${unitLabel()}.`, atFloor:true }
-      : { weight: null, note: 'No previous data — log your starting point.' };
+   The explanation is produced by the same pass that makes the decision, from
+   the same numbers. It cannot describe a rule that wasn't applied.
+
+   Guarantees, enforced at the end of plan() and covered by tests:
+     · the weight is loadable on a real bar
+     · the weight is never under your floor
+     · reps always sit inside the prescribed range
+     · every rule carries a headline, a detail and its evidence            */
+const PROGRESSION = {
+  DETRAIN_DAYS: 21,        // away this long and the last session stops being a fair guide
+  STALL_SESSIONS: 2,       // consecutive misses before a deload is worth offering
+  DETRAIN_FACTOR: 0.9,
+
+  round(v, unit){
+    const smallest = unit === 'lb' ? 2.5 : 1.25;
+    return Math.round(v / smallest) * smallest;
+  },
+  working(sets){ return (sets || []).filter(s => !s.warmup); },
+  daysBetween(a, b){
+    return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+  },
+
+  /* A session only counts as "completed at a weight" if you did the prescribed
+     number of sets at that weight. One heavy single then three back-offs is not
+     a completed prescription, and treating it as one is how engines drift. */
+  topEffort(spec, sets){
+    const work = PROGRESSION.working(sets);
+    if(!work.length) return null;
+    const top = Math.max(...work.map(s => +s.weight || 0));
+    const atTop = work.filter(s => (+s.weight || 0) === top);
+    const reps = atTop.map(s => +s.reps || 0);
+    return {
+      weight: top,
+      setsAtTop: atTop.length,
+      complete: atTop.length >= spec.sets,
+      minReps: Math.min(...reps),
+      maxReps: Math.max(...reps),
+      allAtMax: atTop.length >= spec.sets && reps.every(r => r >= spec.repMax),
+      allAtMin: atTop.length >= spec.sets && reps.every(r => r >= spec.repMin),
+      reps,
+    };
+  },
+
+  plan(input){
+    const spec  = input.spec;
+    const unit  = input.unit || 'kg';
+    const floor = Math.max(0, +input.floor || 0);
+    const today = input.today;
+    const hist  = (input.history || [])
+      .filter(h => PROGRESSION.working(h.sets).length)
+      .slice()
+      .sort((a, b) => a.date < b.date ? -1 : 1);
+
+    const unitLbl = unit === 'lb' ? 'lb' : 'kg';
+    const n = v => String(+(+v).toFixed(2));
+    const ev = [];
+    let rule, weight, reps, headline, detail;
+
+    // ---------- nothing to go on ----------
+    if(!hist.length){
+      if(floor > 0){
+        rule = 'baseline';
+        weight = floor; reps = spec.repMin;
+        headline = 'Start at your baseline';
+        detail = `You set a floor of ${n(floor)}${unitLbl} for this lift and haven't logged it yet, so that's where it begins.`;
+        ev.push({ k:'floor', t:`Floor ${n(floor)}${unitLbl}` });
+      } else {
+        rule = 'unknown';
+        weight = null; reps = spec.repMin;
+        headline = 'First time';
+        detail = 'Nothing logged for this lift yet — whatever you do today becomes the baseline it works from.';
+      }
+      return PROGRESSION.finish({ spec, unit, floor, rule, weight, reps, headline, detail, ev, last:null });
+    }
+
+    const last = hist[hist.length - 1];
+    const eff  = PROGRESSION.topEffort(spec, last.sets);
+    const gap  = today ? PROGRESSION.daysBetween(last.date, today) : 0;
+    ev.push({ k:'last', t:`Last time: ${eff.reps.map(r => `${n(eff.weight)}${unitLbl}×${r}`).join(', ')}` });
+
+    // consecutive sessions that failed to complete the prescription
+    let misses = 0;
+    for(let i = hist.length - 1; i >= 0; i--){
+      const e = PROGRESSION.topEffort(spec, hist[i].sets);
+      if(e && e.allAtMin) break;
+      misses++;
+    }
+
+    // ---------- the ladder; first match wins ----------
+    if(gap >= PROGRESSION.DETRAIN_DAYS){
+      rule = 'return';
+      weight = PROGRESSION.round(eff.weight * PROGRESSION.DETRAIN_FACTOR, unit);
+      reps = spec.repMin;
+      headline = 'Ease back in';
+      detail = `It's been ${gap} days since you trained this. Starting about 10% under your last working weight gives you a session to find it again.`;
+      ev.push({ k:'gap', t:`${gap} days since the last session` });
+
+    } else if(misses >= PROGRESSION.STALL_SESSIONS){
+      rule = 'stall';
+      weight = eff.weight; reps = spec.repMin;
+      headline = 'Same weight again';
+      detail = `You've fallen short of ${spec.repMin} reps ${misses} sessions running. Hold here — and if the next one misses too, dropping about 10% is the faster way back up.`;
+      ev.push({ k:'stall', t:`${misses} sessions short of ${spec.repMin} reps` });
+
+    } else if(eff.allAtMax){
+      rule = 'progress';
+      weight = PROGRESSION.round(eff.weight + (spec.inc || 0), unit);
+      reps = spec.repMin;
+      headline = spec.inc ? `Add ${n(spec.inc)}${unitLbl}` : 'Push for more reps';
+      detail = `You hit ${spec.repMax} reps on all ${spec.sets} sets at ${n(eff.weight)}${unitLbl} — the top of your range. That's the signal to add weight and start the range again.`;
+      ev.push({ k:'rule', t:`All ${spec.sets} sets reached ${spec.repMax} reps` });
+
+    } else if(eff.allAtMin){
+      rule = 'add-reps';
+      weight = eff.weight;
+      reps = Math.min(spec.repMax, eff.minReps + 1);
+      headline = `Beat ${eff.minReps} reps`;
+      detail = `Same weight. Your weakest set last time was ${eff.minReps} reps — get every set to ${reps} and you're one step from adding weight.`;
+      ev.push({ k:'rule', t:`Weakest set: ${eff.minReps} of a target ${spec.repMax}` });
+
+    } else if(!eff.complete){
+      rule = 'incomplete';
+      weight = eff.weight; reps = spec.repMin;
+      headline = 'Finish the sets';
+      detail = `You logged ${eff.setsAtTop} of ${spec.sets} sets at ${n(eff.weight)}${unitLbl} last time. Complete all ${spec.sets} before the weight moves.`;
+      ev.push({ k:'rule', t:`${eff.setsAtTop} of ${spec.sets} sets completed` });
+
+    } else {
+      rule = 'repeat';
+      weight = eff.weight; reps = spec.repMin;
+      headline = 'Same weight';
+      detail = `One or more sets came in under ${spec.repMin} reps last time. Stay here until all ${spec.sets} clear ${spec.repMin}.`;
+      ev.push({ k:'rule', t:`Fell short of ${spec.repMin} reps` });
+    }
+
+    if(floor > 0) ev.push({ k:'floor', t:`Floor ${n(floor)}${unitLbl}` });
+    return PROGRESSION.finish({ spec, unit, floor, rule, weight, reps, headline, detail, ev, last, gap });
+  },
+
+  /* Everything that must be true of any plan, applied in one place so no rule
+     above can forget it. */
+  finish(o){
+    const spec = o.spec, unit = o.unit;
+    let weight = o.weight, reps = o.reps, rule = o.rule;
+    let headline = o.headline, detail = o.detail;
+    const ev = o.ev.slice();
+
+    if(weight !== null && weight !== undefined){
+      weight = PROGRESSION.round(Math.max(0, weight), unit);
+
+      /* The floor outranks every rule: a bad day must never drag the next
+         session down. When it bites, the explanation has to change with it —
+         a card that says "same weight" while showing a heavier bar is the kind
+         of inconsistency that makes the whole thing untrustworthy. */
+      if(o.floor > 0 && weight < o.floor){
+        const wanted = weight;
+        const u = unit === 'lb' ? 'lb' : 'kg';
+        const nf = String(+(+o.floor).toFixed(2));
+        weight = o.floor;
+        ev.push({ k:'clamp', t:`Rule suggested ${String(+(+wanted).toFixed(2))}${u} — floor applied` });
+        if(rule === 'return'){
+          detail += ` Your floor of ${nf}${u} sits above that, so it starts there — reset the floor on the Plan screen if it feels too heavy.`;
+        } else {
+          rule = 'floor';
+          headline = `Back to your floor`;
+          detail = `Last time you worked at ${String(+(+wanted).toFixed(2))}${u}, under your floor of ${nf}${u}. ` +
+                   `The floor is weight you've already proven you can handle, so the target goes back to it rather than following a bad day down.`;
+        }
+      }
+
+      // A heavier bar than last time means the rep target starts over.
+      const lastTop = o.last ? (PROGRESSION.topEffort(spec, o.last.sets) || {}).weight : null;
+      if(lastTop !== null && lastTop !== undefined && weight > lastTop) reps = spec.repMin;
+    }
+
+    reps = Math.min(spec.repMax, Math.max(spec.repMin, Math.round(reps)));
+
+    return {
+      weight, reps, sets: spec.sets, rule, headline, detail,
+      evidence: ev,
+      atFloor: o.floor > 0 && weight === o.floor,
+      unit,
+    };
+  },
+};
+
+/* ---------- Running the engine off the main thread ----------
+   The worker's source is generated from the PROGRESSION object itself, so there
+   is still only one copy of the rules — a second hand-written implementation
+   would be free to drift, which is the usual way engines like this go wrong.
+
+   Results are cached per exercise and invalidated whenever history, floors or
+   units change. If Workers are unavailable the same function runs inline; the
+   answer is identical either way, which the tests assert. */
+let planWorker = null, planCache = new Map(), planSeq = 0;
+
+/* The key has to cover the actual sets, not just how many sessions there are.
+   Keying on length and last date alone meant that editing a logged session —
+   same day, same set count, different reps — returned the previous plan. */
+function historyHash(h){
+  let a = 2166136261;                      // FNV-1a over the whole history
+  const mix = s => { for(let i=0;i<s.length;i++){ a ^= s.charCodeAt(i); a = Math.imul(a, 16777619); } };
+  for(const sess of h){
+    mix(sess.date);
+    for(const s of sess.sets) mix((s.weight||0) + 'x' + (s.reps||0) + (s.warmup ? 'w' : ''));
   }
+  return (a >>> 0).toString(36);
+}
+function planCacheKey(exSpec, asOf){
+  const h = getHistory(exSpec.id);
+  return [exSpec.id, h.length, historyHash(h), floorFor(exSpec.id),
+          unitKey(), exSpec.sets, exSpec.repMin, exSpec.repMax, exSpec.inc,
+          asOf || todayKey()].join('|');
+}
+function invalidatePlans(){ planCache.clear(); }
 
-  const topWeight = Math.max(...last.sets.map(s=>s.weight));
-  const allHitMax = last.sets.every(s=> s.reps >= exSpec.repMax);
-  const allHitMin = last.sets.every(s=> s.reps >= exSpec.repMin);
+function startPlanWorker(){
+  if(planWorker !== null) return planWorker;
+  try{
+    if(typeof Worker === 'undefined' || typeof Blob === 'undefined'){ planWorker = false; return false; }
+    const src = 'const PROGRESSION = ' + serializeEngine() + ';\n' +
+      'self.onmessage = function(e){\n' +
+      '  var jobs = e.data.jobs, out = [];\n' +
+      '  for(var i=0;i<jobs.length;i++){\n' +
+      '    out.push({ key: jobs[i].key, plan: PROGRESSION.plan(jobs[i].input) });\n' +
+      '  }\n' +
+      '  self.postMessage({ seq: e.data.seq, out: out });\n' +
+      '};';
+    planWorker = new Worker(URL.createObjectURL(new Blob([src], {type:'application/javascript'})));
+    planWorker.onmessage = (e)=>{
+      e.data.out.forEach(r => planCache.set(r.key, r.plan));
+      if(typeof onPlansReady === 'function') onPlansReady();
+    };
+    planWorker.onerror = ()=>{ planWorker = false; };   // fall back to inline
+  }catch(err){ planWorker = false; }
+  return planWorker;
+}
 
-  let weight, note;
-  if(allHitMax){
-    weight = +(topWeight + exSpec.inc).toFixed(2);
-    note = 'Last time you hit the top of your range — step up.';
-  } else if(allHitMin){
-    weight = topWeight;
-    note = 'Same weight — push for more reps in your range.';
-  } else {
-    weight = topWeight;
-    note = 'Same weight — focus on completing your rep range.';
-  }
+/* Turn the engine object into source the worker can evaluate.
+   Shorthand methods stringify as "name(args){...}", which is a syntax error as
+   an object-literal value — they need the `function` keyword putting back. */
+function serializeEngine(){
+  const parts = Object.keys(PROGRESSION).map(k=>{
+    const v = PROGRESSION[k];
+    if(typeof v !== 'function') return JSON.stringify(k) + ':' + JSON.stringify(v);
+    let src = String(v).trim();
+    const alreadyValid = /^(function\b|async\b|\()/.test(src) || /^[A-Za-z_$][\w$]*\s*=>/.test(src);
+    if(!alreadyValid) src = 'function ' + src;
+    return JSON.stringify(k) + ':' + src;
+  });
+  return '{' + parts.join(',\n') + '}';
+}
 
-  // The ratchet: a bad day last week must not drag this week's target down.
-  if(floor > weight){
-    return { weight: floor, note: `Back to your floor of ${num(floor)}${unitLabel()}.`, atFloor:true };
-  }
-  return { weight, note, atFloor: weight === floor };
+/* Ask for plans ahead of time so the gym screen never computes while painting. */
+function precomputePlans(exercises, asOf){
+  const when = asOf || todayKey();
+  const w = startPlanWorker();
+  const jobs = [];
+  exercises.forEach(exSpec=>{
+    const key = planCacheKey(exSpec, when);
+    if(planCache.has(key)) return;
+    jobs.push({ key, input:{
+      spec: exSpec, history: getHistory(exSpec.id), floor: floorFor(exSpec.id),
+      today: when, unit: unitKey(),
+    }});
+  });
+  if(!jobs.length) return;
+  if(w) w.postMessage({ seq: ++planSeq, jobs });
+  else jobs.forEach(j => planCache.set(j.key, PROGRESSION.plan(j.input)));
+}
+
+/* The rest of the app asks for a target through here. It is a thin shim over the
+   engine so there is exactly one set of progression rules in the codebase. */
+/* `asOf` is the date the session is being planned FOR, which is not always
+   today: backfilling a missed day, or replaying history, must measure the gap
+   since the last session against that day, not this one. */
+function planFor(exSpec, asOf){
+  const when = asOf || todayKey();
+  const key = planCacheKey(exSpec, when);
+  if(planCache.has(key)) return planCache.get(key);
+  const p = PROGRESSION.plan({
+    spec: exSpec,
+    history: getHistory(exSpec.id),
+    floor: floorFor(exSpec.id),
+    today: when,
+    unit: unitKey(),
+  });
+  planCache.set(key, p);
+  return p;
+}
+function suggestTarget(exSpec, asOf){
+  const p = planFor(exSpec, asOf);
+  return { weight: p.weight, note: p.detail, atFloor: p.atFloor, plan: p };
 }
 
 /* ============================= HOME ============================= */
@@ -2457,7 +2911,7 @@ function ensureDefaults(exSpec, setIdx){
     if(rows[i].done){ row.weight = rows[i].weight; row.reps = rows[i].reps; return row; }
   }
 
-  const target = suggestTarget(exSpec);
+  const target = suggestTarget(exSpec, focus.date);
   const last = lastSession(exSpec.id);
   const lastSet = last && last.sets[setIdx] ? last.sets[setIdx] : null;
   row.weight = target.weight !== null ? target.weight : (lastSet ? lastSet.weight : 0);
@@ -2512,6 +2966,8 @@ function renderSession(sessionId, isReview, forDate){
 
   focus = { exercises, flat, pos: startPos, sessionName: session.name, sessionId,
             date: tKey, active:true, restEnd:null, restLen:0, restDinged:false };
+  whyOpen = false;
+  precomputePlans(exercises, tKey);   // off the main thread, before the first paint
   keepAwake(true);
   paintFocus();
 }
@@ -2628,6 +3084,47 @@ function setLabel(exSpec, row){
 }
 /* The floor, shown where you're about to act on it. Going under is allowed —
    it just says so, and the finish screen will ask what happened. */
+/* What to hit, and why — stated before you touch the steppers. The headline is
+   the instruction, the detail is the reasoning, and the evidence underneath is
+   the actual numbers it read. */
+const RULE_ICON = {
+  progress:'↑', 'add-reps':'+', repeat:'=', incomplete:'=', stall:'!',
+  return:'↓', baseline:'●', unknown:'?',
+};
+let whyOpen = false;
+
+function targetCardHTML(exSpec, row){
+  const p = planFor(exSpec, focus.date);
+  if(p.weight === null || p.weight === undefined){
+    return `<div class="targetcard first">
+        <div class="tgtwhy">${p.detail}</div>
+      </div>`;
+  }
+  const unit = exSpec.isTime ? 's' : unitLabel();
+  const target = exSpec.isTime
+    ? `<b>${p.reps}</b><span class="tu">${unit}</span>`
+    : `<b>${num(p.weight)}</b><span class="tu">${unit}</span><span class="tx">×</span><b>${p.reps}</b>`;
+  return `
+    <div class="targetcard rule-${p.rule}">
+      <div class="tgtrow">
+        <span class="tgtlbl">Target</span>
+        <span class="tgtval">${target}</span>
+      </div>
+      <button class="tgthead" id="whyBtn" aria-expanded="${whyOpen}">
+        <span class="tgticon">${RULE_ICON[p.rule] || '·'}</span>
+        <span class="tgttext">${p.headline}</span>
+        <span class="tgtchev">${whyOpen ? 'Hide' : 'Why'}</span>
+      </button>
+      ${whyOpen ? `
+        <div class="tgtwhy">
+          ${p.detail}
+          <ul class="tgtev">
+            ${p.evidence.map(e=>`<li class="ev-${e.k}">${e.t}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+    </div>`;
+}
+
 function floorNoteHTML(exSpec, row){
   const floor = floorFor(exSpec.id);
   if(exSpec.isTime || floor <= 0) return '';
@@ -2684,6 +3181,7 @@ function paintFocus(){
         <div class="setdots" aria-label="Set ${f.setIdx+1} of ${exSpec.sets}">${setDots}</div>
         <div class="focus-setlabel">Set ${f.setIdx+1} of ${exSpec.sets} · exercise ${f.exIdx+1} of ${focus.exercises.length}</div>
         ${restBandHTML()}
+        ${targetCardHTML(exSpec, row)}
         <div class="focus-prev">${prevText}</div>
         <div class="floornote" id="floorNote">${floorNoteHTML(exSpec, row)}</div>
 
@@ -2801,6 +3299,7 @@ function attachFocusHandlers(exSpec, row){
     if(!isLast) startRest(defaultRest(exSpec));
     advance();
   });
+  root.querySelector('#whyBtn')?.addEventListener('click', ()=>{ whyOpen = !whyOpen; paintFocus(); });
   root.querySelector('#warmToggle')?.addEventListener('click', ()=>{
     row.warmup = !row.warmup;
     paintFocus();
@@ -2924,6 +3423,7 @@ async function saveFocusSession(early){
   focus.under = under;
   focus.raised = raised;
   focus.prs = prs;
+  invalidatePlans();          // history and floors just moved
   await saveState();
   paintFinish(early);
 }
@@ -3000,6 +3500,7 @@ function paintFinish(early){
       const spec = focus.exercises.find(e=> e.id === exId);
       if(!spec) return;
       const to = applyDeload(spec);
+      invalidatePlans();
       await saveState();
       b.disabled = true;
       b.textContent = `${spec.name}: floor now ${num(to)}${unitLabel()}`;
@@ -3296,6 +3797,7 @@ async function savePlan(){
 
   state.setup = next;
   state.floors = { ...d.floors };
+  invalidatePlans();          // sets, reps, increments and floors may all have moved
   await saveState();
   planDraft = null;
   renderPlan();
@@ -3789,6 +4291,7 @@ function renderHistory(){
       async ()=>{
         state.completions = {};
         state.history = {};
+        invalidatePlans();
         await saveState();
         renderHistory();
       },
