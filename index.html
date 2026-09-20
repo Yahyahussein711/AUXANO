@@ -717,6 +717,7 @@
   .steps .dot.active{ background:var(--gold); }
   .steps .dot.past{ background:var(--patina); }
 
+  .showmore{ margin-top:4px; font-size:13.5px; padding:11px; }
   .backfillzone{ margin-top:22px; text-align:center; }
   .backupzone{
     margin-top:26px; padding-top:20px; border-top:1px solid var(--line); text-align:center;
@@ -2311,6 +2312,8 @@ function tabbarHTML(active){
 function bindTabs(){
   root.querySelectorAll('[data-tab]').forEach(b=>{
     b.addEventListener('click', ()=>{
+      // arriving at the log fresh should always start collapsed
+      if(b.dataset.tab === 'log') logExpanded = false;
       const go = { today: renderHome, plan: renderPlan, log: renderHistory }[b.dataset.tab];
       if(go) go();
     });
@@ -3574,6 +3577,8 @@ function promptSwap(){
 }
 
 /* ============================= HISTORY / TRAINING LOG ============================= */
+const LOG_PREVIEW = 3;      // sessions shown before "show older"
+let logExpanded = false;    // resets whenever you leave the screen
 function computeStreak(){
   let streak = 0;
   let d = nowDate();
@@ -3646,7 +3651,12 @@ function renderHistory(){
     `<div class="hcell ${c.status} ${c.isToday?'istoday':''} ${c.future?'future':''}" title="${c.dk}">${c.dayNum}</div>`
   ).join('');
 
-  const listHTML = dateKeys.length ? dateKeys.map(dk=>{
+  // Only the last few sessions by default — the log grows forever and the
+  // heatmap above already covers the longer view.
+  const shown = logExpanded ? dateKeys : dateKeys.slice(0, LOG_PREVIEW);
+  const hidden = dateKeys.length - shown.length;
+
+  const listHTML = dateKeys.length ? shown.map(dk=>{
     const entry = state.completions[dk];
     const meta = entry._meta || { sessionName:'Workout' };
     const exIds = Object.keys(entry).filter(k=>k!=='_meta');
@@ -3698,8 +3708,17 @@ function renderHistory(){
         </div>
       </div>
       <div>
-        <span class="eyebrow" style="display:block; margin:4px 0 10px 2px;">All sessions</span>
+        <div class="cardhead" id="logSectHead" style="margin:4px 2px 10px;">
+          <span class="eyebrow" style="margin:0;">${logExpanded ? 'All sessions' : 'Recent sessions'}</span>
+          ${dateKeys.length ? `<span class="cardmeta">${shown.length} of ${dateKeys.length}</span>` : ''}
+        </div>
         ${listHTML}
+        ${hidden > 0 ? `
+          <button class="btn btn-ghost showmore" id="logMore">
+            Show ${hidden} older session${hidden===1?'':'s'}
+          </button>` : ''}
+        ${logExpanded && dateKeys.length > LOG_PREVIEW ? `
+          <button class="btn btn-ghost showmore" id="logLess">Show fewer</button>` : ''}
       </div>
       <div class="backfillzone">
         <button class="btn btn-ghost" id="backfillBtn">Log a past session</button>
@@ -3733,6 +3752,9 @@ function renderHistory(){
 
   root.querySelectorAll('[data-exprog]').forEach(b=>
     b.addEventListener('click', ()=> renderExercise(b.dataset.exprog, 'log')));
+
+  root.querySelector('#logMore')?.addEventListener('click', ()=>{ logExpanded = true;  renderHistory(); });
+  root.querySelector('#logLess')?.addEventListener('click', ()=>{ logExpanded = false; renderHistory(); });
 
   root.querySelector('#backfillBtn')?.addEventListener('click', promptBackfill);
   root.querySelector('#exportBtn')?.addEventListener('click', exportBackup);
