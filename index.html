@@ -1693,6 +1693,31 @@ function bindPlanRow(key){
       repaintPlanRow(key);
     });
   });
+  // Must be bound here, not in attachWizardHandlers: this button only exists
+  // once a row is expanded, which happens via repaintPlanRow rather than a
+  // full re-render, so a handler attached at render time would never find it.
+  el.querySelector('[data-removeex]')?.addEventListener('click', (ev)=>{
+    const [sid, idxStr] = ev.currentTarget.dataset.removeex.split('|');
+    const idx = parseInt(idxStr, 10);
+    const e = wizard.exercises[sid][idx];
+    if(!e) return;
+    const drop = ()=>{
+      wizard.exercises[sid].splice(idx, 1);
+      wizard.openEx = null;
+      renderWizard();
+    };
+    // Dropping something you've actually trained is worth a question; a
+    // just-added exercise is not.
+    if(getHistory(e.id).length){
+      showConfirm(
+        `Remove <b>${e.name}</b> from this session?<br><br>` +
+        `Its logged history is kept — you just stop being prescribed it.`,
+        'Remove', drop, { danger:true });
+    } else {
+      drop();
+    }
+  });
+
   el.querySelector('[data-clearfloor]')?.addEventListener('click', (ev)=>{
     const exId = ev.currentTarget.dataset.clearfloor;
     showConfirm(
@@ -1778,14 +1803,6 @@ function attachWizardHandlers(){
     root.querySelectorAll('.planrow[data-row]').forEach(el=> bindPlanRow(el.dataset.row));
     root.querySelectorAll('[data-addex]').forEach(b=>{
       b.addEventListener('click', ()=> promptAddExercise(b.dataset.addex));
-    });
-    root.querySelectorAll('[data-removeex]').forEach(b=>{
-      b.addEventListener('click', (ev)=>{
-        const [sid, idxStr] = ev.currentTarget.dataset.removeex.split('|');
-        wizard.exercises[sid].splice(parseInt(idxStr,10), 1);
-        wizard.openEx = null;
-        renderWizard();
-      });
     });
     root.querySelector('#backTo3')?.addEventListener('click', ()=>{ wizard.step=3; renderWizard(); });
     root.querySelector('#toStep5')?.addEventListener('click', ()=>{ wizard.step=5; renderWizard(); });
@@ -2100,7 +2117,7 @@ function renderHome(){
           upcoming.toLocaleDateString(undefined,{weekday:'long'})}</div>` : ''}
       </div>`;
   } else {
-    const exs = state.setup.exercises[session.id];
+    const exs = exercisesFor(session.id);
     const totalSets = exs.reduce((n,e)=> n + e.sets, 0);
     // Showing the actual lifts means you know what you're walking into without tapping.
     const preview = exs.map(e=>`
@@ -2112,11 +2129,14 @@ function renderHome(){
       <div class="hero ${doneToday?'complete':''}">
         <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}${doneToday?' · Complete':''}</span>
         <h2 class="heroname">${session.name}</h2>
-        <p class="herometa">${exs.length} exercises · ${totalSets} sets</p>
+        <p class="herometa">${exs.length} exercise${exs.length===1?'':'s'} · ${totalSets} sets</p>
         <div class="exlist">${preview}</div>
-        ${doneToday
-          ? `<button class="btn btn-ghost" id="reopenSession">Review today's log</button>`
-          : `<button class="btn btn-primary logbtn-home" id="startSession">Start workout</button>`}
+        ${!exs.length
+          ? `<p class="fchint" style="margin-bottom:14px;">This session has no exercises yet.</p>
+             <button class="btn btn-ghost" id="resetBtn3">Add some</button>`
+          : doneToday
+            ? `<button class="btn btn-ghost" id="reopenSession">Review today's log</button>`
+            : `<button class="btn btn-primary logbtn-home" id="startSession">Start workout</button>`}
       </div>`;
   }
 
@@ -2156,6 +2176,9 @@ function renderHome(){
     b.addEventListener('click', ()=> renderExercise(b.dataset.exprog, 'home')));
   root.querySelector('#resetBtn')?.addEventListener('click', enterEditSetup);
   root.querySelector('#resetBtn2')?.addEventListener('click', enterEditSetup);
+  root.querySelector('#resetBtn3')?.addEventListener('click', ()=>{
+    enterEditSetup(); wizard.step = 4; renderWizard();
+  });
   root.querySelector('#startSession')?.addEventListener('click', ()=> renderSession(session.id, false));
   root.querySelector('#reopenSession')?.addEventListener('click', ()=>{ if(reviewId) renderSession(reviewId, true); });
   bindTabs();
@@ -2240,6 +2263,10 @@ function renderSession(sessionId, isReview, forDate){
     }
     sessionDraft[exSpec.id] = rows;
   });
+
+  // An emptied session has nothing to walk through, and paintFocus would read
+  // flat[0] of an empty list.
+  if(!flat.length){ focus.active = false; return renderHome(); }
 
   // resume at first not-done set (fresh sessions: pos 0; review: land at start)
   let startPos = 0;
