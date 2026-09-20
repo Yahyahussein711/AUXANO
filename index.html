@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<!-- Added to the home screen, this should open as an app rather than a tab. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Auxano">
 <meta name="color-scheme" content="dark">
 <title>Auxano — Progressive Overload</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,9 +90,7 @@
     font-size:22px; font-weight:700; letter-spacing:0.06em;
     display:flex; align-items:center; gap:8px;
   }
-  header.top .brand .bar{
-    width:18px; height:6px; background:var(--gold); border-radius:2px;
-  }
+  .logomark{ color:var(--gold); flex-shrink:0; display:block; }
   header.top .reset{
     background:none; color:var(--steel); font-size:12px; text-decoration:underline;
     text-transform:uppercase; letter-spacing:0.05em;
@@ -791,6 +794,14 @@
     .card, .tpl, .btn{ transition:transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
     .btn-primary:active{ transform:scale(0.98); }
     .chev{ transition:transform 0.15s ease, color 0.15s ease; }
+    /* The mark wipes in left to right — it reads as the ratchet being climbed
+       rather than a logo fading on. Once per session, not on every screen. */
+    .logomark.reveal{ animation:markIn .85s cubic-bezier(.22,.9,.3,1) .1s both; }
+    @keyframes markIn{
+      from{ clip-path:inset(0 100% 0 0); opacity:.35; }
+      to  { clip-path:inset(0 0 0 0);    opacity:1; }
+    }
+
     /* bars grow in once, staggered left to right */
     .setchart .b{ transform-origin:bottom; animation:barRise .5s cubic-bezier(.22,.9,.3,1) both; }
     .setchart .slot:nth-child(2) .b{ animation-delay:.02s; }
@@ -1179,6 +1190,78 @@ function showConfirm(message, confirmLabel, onYes, opts){
 /* ============================= WIZARD TEMP STATE ============================= */
 let wizard = { step:1, selectedDays:[], templateId:null, dayMap:{}, exercises:null, openEx:null, baselines:{} };
 
+/* ============================= THE MARK =============================
+   A ratchet: three gains, two small give-backs, ending higher than it started.
+   Each give-back is smaller than the gain before it, so every low point still
+   sits above the previous high — which is exactly what a floor guarantees.
+   One path, six points, no curves: sharp at every size, and the same geometry
+   drives the header mark, the favicon and the home-screen icon. */
+const MARK_PTS = [[10,86],[34,58],[34,68],[58,40],[58,50],[82,22],[82,90],[10,90]];
+const MARK_D = 'M' + MARK_PTS.map(p=>p.join(' ')).join(' L') + ' Z';
+
+let markAnimated = false;        // reveal once per session, not on every screen
+function brandHTML(label){
+  const cls = 'logomark' + (markAnimated ? '' : ' reveal');
+  markAnimated = true;
+  return `<div class="brand">
+      <svg class="${cls}" viewBox="0 0 100 100" width="21" height="21" aria-hidden="true">
+        <path d="${MARK_D}" fill="currentColor"/>
+      </svg>${label}</div>`;
+}
+
+/* Icons are drawn from the same points onto a canvas at boot, so there is no
+   binary asset to keep in sync and the app stays a single file. */
+function markCanvas(size, opts){
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  if(opts.bg){ ctx.fillStyle = opts.bg; ctx.fillRect(0, 0, size, size); }
+
+  // Centre the artwork's real bounding box, not the 100-unit box it sits in.
+  const xs = MARK_PTS.map(p=>p[0]), ys = MARK_PTS.map(p=>p[1]);
+  const bx = Math.min(...xs), by = Math.min(...ys);
+  const bw = Math.max(...xs) - bx, bh = Math.max(...ys) - by;
+  const inner = size - opts.pad * 2;
+  const s = inner / Math.max(bw, bh);
+  const ox = opts.pad + (inner - bw*s)/2 - bx*s;
+  const oy = opts.pad + (inner - bh*s)/2 - by*s;
+
+  ctx.fillStyle = opts.fg;
+  ctx.beginPath();
+  MARK_PTS.forEach(([x,y],i)=>{
+    const px = ox + x*s, py = oy + y*s;
+    if(i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+  });
+  ctx.closePath();
+  ctx.fill();
+  return c;
+}
+
+function setLink(rel, href, sizes){
+  let el = document.querySelector(`link[rel="${rel}"]`);
+  if(!el){ el = document.createElement('link'); el.rel = rel; document.head.appendChild(el); }
+  el.href = href;
+  if(sizes) el.setAttribute('sizes', sizes);
+}
+
+function installIcons(){
+  try{
+    const gold = '#C9A227', ground = '#0B0B0C';
+    setLink('icon', markCanvas(64, { bg:ground, fg:gold, pad:6 }).toDataURL('image/png'), '64x64');
+    // iOS applies its own rounded mask, so this is a full-bleed square with the
+    // artwork inset rather than something pre-rounded.
+    setLink('apple-touch-icon', markCanvas(180, { bg:ground, fg:gold, pad:34 }).toDataURL('image/png'), '180x180');
+
+    const manifest = {
+      name:'Auxano', short_name:'Auxano', start_url:'.', display:'standalone',
+      background_color:'#000000', theme_color:'#000000',
+      icons:[{ src: markCanvas(512, { bg:ground, fg:gold, pad:96 }).toDataURL('image/png'),
+               sizes:'512x512', type:'image/png', purpose:'any' }],
+    };
+    setLink('manifest', URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'})));
+  }catch(e){ /* canvas unavailable — the app is unaffected */ }
+}
+
 /* ============================= RENDER ROOT ============================= */
 const root = document.getElementById('app');
 
@@ -1290,7 +1373,7 @@ function renderWizard(){
 
   root.innerHTML = `
     <header class="top">
-      <div class="brand"><span class="bar"></span>AUXANO</div>
+      ${brandHTML("AUXANO")}
       ${state.setup ? '<button class="reset" id="cancelEdit">Cancel</button>' : ''}
     </header>
     <main>
@@ -2309,7 +2392,7 @@ function renderHome(){
 
   root.innerHTML = `
     <header class="top">
-      <div class="brand"><span class="bar"></span>AUXANO</div>
+      ${brandHTML("AUXANO")}
     </header>
     <main>
       ${storageIsDurable() ? '' : `
@@ -3001,7 +3084,7 @@ function renderPlan(){
 
   root.innerHTML = `
     <header class="top">
-      <div class="brand"><span class="bar"></span>PLAN</div>
+      ${brandHTML("PLAN")}
       ${d.dirty ? '<button class="reset" id="planDiscard">Discard</button>' : ''}
     </header>
     <main>
@@ -3596,7 +3679,7 @@ function renderHistory(){
 
   root.innerHTML = `
     <header class="top">
-      <div class="brand"><span class="bar"></span>TRAINING LOG</div>
+      ${brandHTML("TRAINING LOG")}
     </header>
     <main>
       <div class="statrow">
@@ -3678,6 +3761,7 @@ function renderHistory(){
 (async function init(){
   root.innerHTML = `<div class="empty"><div class="plateicon">◐</div>Loading Auxano…</div>`;
   await loadState();
+  installIcons();
   paintDevBar();
   render();
 })();
