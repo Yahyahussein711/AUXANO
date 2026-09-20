@@ -271,23 +271,22 @@
      The label row, the bar row and the reps row share one gap value, so a weight
      sits dead centre over its own bar. Three separate flex rows with different
      gaps is what makes a chart like this feel subtly wrong. */
-  .setchart{ --cgap:10px; margin-top:4px; }
+  .setchart{ --cgap:8px; margin-top:2px; }
   .setchart .wlabels,
-  .setchart .plot,
-  .setchart .reps{ display:flex; gap:var(--cgap); }
+  .setchart .plot{ display:flex; gap:var(--cgap); }
   .setchart .wlabels > *,
-  .setchart .plot > .slot,
-  .setchart .reps > *{ flex:1; min-width:0; }
+  .setchart .plot > .slot{ flex:1; min-width:0; }
 
-  .setchart .wlabels{ margin-bottom:6px; }
+  .setchart .wlabels{ margin-bottom:4px; }
   .setchart .wlabels span{
-    text-align:center; font-family:'IBM Plex Mono',monospace; font-size:13px;
-    color:var(--chalk); font-variant-numeric:tabular-nums;
+    text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    color:var(--chalk); font-variant-numeric:tabular-nums; white-space:nowrap;
   }
+  .setchart .wlabels i{ font-style:normal; color:var(--steel); padding:0 1px; }
   .setchart .wlabels .under{ color:var(--danger); }
-  .setchart .wlabels .warm{ color:var(--steel); font-size:11.5px; }
+  .setchart .wlabels .warm{ color:var(--steel); }
 
-  .setchart .plot{ position:relative; height:104px; align-items:flex-end; }
+  .setchart .plot{ position:relative; height:40px; align-items:flex-end; }
   .setchart .slot{
     position:relative; height:100%; display:flex; align-items:flex-end;
     background:rgba(255,255,255,0.038); border-radius:4px;
@@ -306,15 +305,7 @@
     letter-spacing:0.11em; text-transform:uppercase; color:var(--gold);
   }
 
-  .setchart .reps{ margin-top:8px; }
-  .setchart .reps span{
-    text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--steel);
-  }
-  .setchart .reps b{ color:var(--chalk-dim); font-weight:500; }
-  .setchart .chartunit{
-    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.13em;
-    text-transform:uppercase; color:var(--steel); margin-top:7px;
-  }
+  .setchart .fl em{ font-size:8.5px; top:-7px; }
 
   /* Set-by-set records. Each set gets its own pill so the grouping is obvious
      without leaning on a separator character, and the row can wrap cleanly. */
@@ -343,6 +334,17 @@
     display:block; -webkit-tap-highlight-color:transparent;
   }
   .exline.tappable:active{ background:var(--panel-raised); }
+  /* Log rows carry a chart, so they run tighter than the today card's list. */
+  .exline.compact{ padding:10px 0; }
+  .exline.compact .exlname{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; margin-bottom:6px; font-size:14px;
+  }
+  .exline.compact .nm{ min-width:0; }
+  .exunit{
+    font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--steel); flex-shrink:0;
+  }
 
   .chartwrap{ margin-top:16px; }
   .spark{ width:100%; height:84px; display:block; }
@@ -1624,21 +1626,19 @@ function setChartHTML(e){
   const top = Math.max(floor, ...vals) * 1.12;
   const pct = v => (v / top) * 100;
 
+  // Weight and reps share one line above each bar. Three stacked rows per
+  // exercise made a single session scroll for pages.
   const labels = sets.map((s,i)=>{
     const v = vals[i];
     const cls = s.warmup ? 'warm' : (floor > 0 && v < floor ? 'under' : '');
-    return `<span class="${cls}">${num(v)}</span>`;
+    const tail = isTime ? 's' : `<i>×</i>${s.reps}`;
+    return `<span class="${cls}">${num(v)}${tail}</span>`;
   }).join('');
 
   const bars = sets.map((s,i)=>{
     const v = vals[i];
     const cls = s.warmup ? 'warm' : (floor > 0 && v < floor ? 'under' : '');
     return `<div class="slot"><div class="b ${cls}" style="height:${pct(v).toFixed(1)}%"></div></div>`;
-  }).join('');
-
-  const reps = sets.map(s=>{
-    if(s.warmup) return `<span>warm</span>`;
-    return isTime ? `<span>hold</span>` : `<span>×<b>${s.reps}</b></span>`;
   }).join('');
 
   const floorLine = floor > 0
@@ -1649,8 +1649,6 @@ function setChartHTML(e){
     <div class="setchart">
       <div class="wlabels">${labels}</div>
       <div class="plot">${floorLine}${bars}</div>
-      <div class="reps">${reps}</div>
-      <div class="chartunit">${isTime ? 'seconds held' : unitLabel()}</div>
     </div>`;
 }
 
@@ -3667,8 +3665,11 @@ function renderHistory(){
       const pr = meta.prs && meta.prs.indexOf(exId) > -1;
       const chart = setChartHTML(e);
       return `
-        <button class="exline tappable" data-exprog="${exId}">
-          <span class="exlname">${e.name}${pr ? '<span class="pr-badge">★ PR</span>' : ''}</span>
+        <button class="exline tappable compact" data-exprog="${exId}">
+          <span class="exlname">
+            <span class="nm">${e.name}${pr ? '<span class="pr-badge">★ PR</span>' : ''}</span>
+            ${chart ? `<span class="exunit">${e.isTime ? 'sec' : unitLabel()}</span>` : ''}
+          </span>
           ${chart || `<span class="exspec setlist">${loggedSpecCaps(e)}</span>`}
         </button>`;
     }).join('');
