@@ -2,22 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="color-scheme" content="dark">
 <title>Auxano — Progressive Overload</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#17181B;
-    --panel:#212226;
-    --panel-raised:#2A2B30;
-    --line:#38393E;
-    --chalk:#EDEAE1;
-    --chalk-dim:#9A9CA3;
-    --steel:#8B8D93;
-    --rust:#C1443A;
-    --rust-dim:#7A2E29;
-    --patina:#6B9C6E;
+    /* True black — on OLED these pixels are switched off, not lit dark grey.
+       Surfaces step up in near-black rather than grey so the depth stays subtle. */
+    --bg:#000000;
+    --panel:#0B0B0C;
+    --panel-raised:#151517;
+    --line:#242427;
+    --hairline:rgba(255,255,255,0.055);
+
+    --chalk:#F3F1EB;
+    --chalk-dim:#A9A69E;
+    --steel:#8A877E;            /* small uppercase labels — must clear AA on --panel-raised */
+
+    /* Deeper and less saturated than a bright yellow — gold reads as precious in
+       proportion to how little of it there is, so it is spent in few places. */
+    --gold:#C9A227;
+    --gold-bright:#F0D98C;
+    --gold-deep:#B8941F;
+    --gold-press:#B08D28;       /* pressed state of a gold fill */
+    --gold-dim:#9C8438;
+    --gold-wash:rgba(201,162,39,0.09);
+    --on-gold:#100D02;          /* text that sits on a gold fill */
+
+    --patina:#6B9C6E;           /* completed */
+    --danger:#C1443A;           /* missed / destructive */
+    --danger-dim:#6E2925;
+
     --radius:14px;
     font-size:16px;
   }
@@ -27,21 +45,22 @@
     color:var(--chalk);
     font-family:'Inter',sans-serif;
     min-height:100vh;
+    min-height:100dvh;
     -webkit-font-smoothing:antialiased;
   }
   .app{
     max-width:520px;
     margin:0 auto;
     min-height:100vh;
+    min-height:100dvh;          /* mobile Safari's collapsing chrome breaks plain vh */
     display:flex;
     flex-direction:column;
-    padding-bottom:40px;
   }
   h1,h2,h3{ font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em; }
   .mono{ font-family:'IBM Plex Mono',monospace; }
   button{ font-family:'Inter',sans-serif; cursor:pointer; border:none; }
   button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
-    outline:2px solid var(--rust); outline-offset:2px;
+    outline:2px solid var(--gold); outline-offset:2px;
   }
   input{
     font-family:'IBM Plex Mono',monospace;
@@ -66,7 +85,7 @@
     display:flex; align-items:center; gap:8px;
   }
   header.top .brand .bar{
-    width:18px; height:6px; background:var(--rust); border-radius:2px;
+    width:18px; height:6px; background:var(--gold); border-radius:2px;
   }
   header.top .reset{
     background:none; color:var(--steel); font-size:12px; text-decoration:underline;
@@ -85,7 +104,7 @@
   .muted{ color:var(--steel); font-size:14px; line-height:1.5; }
   .eyebrow{
     font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.12em;
-    text-transform:uppercase; color:var(--rust); margin-bottom:6px; display:block;
+    text-transform:uppercase; color:var(--gold); margin-bottom:6px; display:block;
   }
 
   /* ---------- Buttons ---------- */
@@ -94,9 +113,17 @@
     padding:14px 20px; border-radius:10px; font-weight:600; font-size:15px;
     width:100%;
   }
-  .btn-primary{ background:var(--rust); color:#fff; }
-  .btn-primary:active{ background:var(--rust-dim); }
+  /* Flat and deeper, with one lit top edge and no outer glow — a bright
+     gradient plus a drop shadow reads high-visibility, not premium. */
+  .btn-primary{
+    background:var(--gold); color:var(--on-gold);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.16);
+  }
+  .btn-primary:active{ background:var(--gold-press); box-shadow:none; }
   .btn-ghost{ background:var(--panel-raised); color:var(--chalk); border:1px solid var(--line); }
+  /* Destructive actions never borrow the gold — gold means "go". */
+  .btn-danger{ background:transparent; color:var(--danger); border:1px solid var(--danger-dim); }
+  .btn-danger:active{ background:var(--danger); color:#fff; border-color:var(--danger); }
   .btn-text{ background:none; color:var(--steel); font-size:13px; padding:8px; width:auto; }
 
   /* ---------- Day picker ---------- */
@@ -107,16 +134,16 @@
     display:flex; align-items:center; justify-content:center;
     font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600;
   }
-  .daychip.active{ background:var(--rust); border-color:var(--rust); color:#fff; }
+  .daychip.active{ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
 
   /* ---------- Template list ---------- */
   .tpl{
     border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:10px;
     background:var(--panel-raised); text-align:left; width:100%; color:var(--chalk);
   }
-  .tpl.selected{ border-color:var(--rust); box-shadow:0 0 0 1px var(--rust); }
+  .tpl.selected{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
   .tpl .tname{ font-family:'Oswald',sans-serif; font-size:17px; letter-spacing:0.02em; }
-  .tpl .tfreq{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--rust); margin:4px 0 6px; text-transform:uppercase; }
+  .tpl .tfreq{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gold); margin:4px 0 6px; text-transform:uppercase; }
   .tpl .tdesc{ font-size:13px; color:var(--steel); line-height:1.45; }
   .tag{
     display:inline-block; font-size:10px; padding:2px 7px; border-radius:20px;
@@ -136,29 +163,177 @@
     border-radius:8px; padding:9px 10px; font-family:'Inter',sans-serif; font-size:14px; flex:1;
   }
 
-  /* ---------- Exercise editor (setup step 4) ---------- */
-  .exrow{ padding:12px 0; border-bottom:1px solid var(--line); }
-  .exrow:last-child{ border-bottom:none; }
-  .exrow .exname{ font-weight:600; font-size:14px; margin-bottom:8px; }
-  .exrow .exfields{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; }
-  .exrow label{ font-size:10px; color:var(--steel); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:3px; }
-  .exrow input{ padding:8px 6px; font-size:13px; }
-  .sessionblock{ margin-bottom:22px; }
-  .sessionblock h3{ font-size:16px; margin-bottom:6px; color:var(--rust); }
+  /* ---------- Plan review (setup step 4) ---------- */
+  .plan-session{ margin-bottom:16px; }
+  .plan-session h3{ font-size:15px; margin-bottom:8px; color:var(--gold); }
+  .emptyplan{ padding:16px; font-size:13px; color:var(--steel); text-align:center; }
+  .rowactions{ display:flex; justify-content:flex-end; padding:8px 0 0; border-top:1px solid var(--line); margin-top:10px; }
+  .addex{ margin-top:8px; font-size:13.5px; padding:10px; }
+  .plan-list{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); overflow:hidden;
+  }
+  .planrow{ border-bottom:1px solid var(--line); }
+  .planrow:last-child{ border-bottom:none; }
+  .planrow-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    width:100%; background:none; color:var(--chalk); text-align:left;
+    padding:15px 16px; font-size:14.5px; font-weight:500;
+  }
+  .planrow-head .pr-name{ flex:1; min-width:0; line-height:1.3; }
+  .planrow-head .pr-num{
+    font-size:13.5px; display:flex; align-items:baseline; gap:9px;
+  }
+  .planrow-head .chev{ font-size:10px; color:var(--steel); display:inline-block; }
+  .planrow{ border-bottom:1px solid var(--hairline); }
+  .planrow.open .planrow-head{ background:var(--panel-raised); }
+  .planrow.open .chev{ transform:rotate(90deg); color:var(--gold); }
+
+  .planedit{ background:var(--panel-raised); padding:0 16px 14px; }
+  .editline{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:12px 0; border-top:1px solid var(--line);
+  }
+  .editline.stacked{ flex-direction:column; align-items:stretch; gap:10px; }
+  .ellabel{
+    font-size:10.5px; color:var(--steel); text-transform:uppercase; letter-spacing:0.08em;
+  }
+  .mini{ display:flex; align-items:center; gap:10px; }
+  .mini-range{ display:flex; align-items:center; justify-content:center; gap:12px; }
+  .minibtn{
+    width:36px; height:36px; border-radius:9px; background:var(--panel);
+    border:1px solid var(--line); color:var(--chalk); font-size:19px; line-height:1;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    -webkit-tap-highlight-color:transparent; user-select:none;
+  }
+  .minibtn:active:not(:disabled){ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
+  .minibtn:disabled{ opacity:0.28; }
+  .minival{
+    font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:600;
+    min-width:42px; text-align:center;
+  }
+  .rangesep{ color:var(--steel); font-size:12px; text-transform:uppercase; letter-spacing:0.06em; }
+  .helptext{
+    font-size:12.5px; color:var(--steel); line-height:1.5;
+    border-top:1px solid var(--line); padding-top:11px;
+  }
 
   /* ---------- Home ---------- */
-  .weekstrip{ display:flex; gap:6px; margin-top:14px; }
-  .wdot{
-    flex:1; aspect-ratio:1; border-radius:8px; background:var(--panel-raised);
-    border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
-    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--steel); position:relative;
+  .iconbtn{
+    width:40px; height:40px; border-radius:10px; background:var(--panel-raised);
+    border:1px solid var(--line); color:var(--chalk-dim); font-size:17px;
+    display:flex; align-items:center; justify-content:center;
   }
-  .wdot.scheduled{ border-color:var(--rust); color:var(--chalk); }
-  .wdot.done{ background:var(--rust); border-color:var(--rust); color:#fff; }
-  .wdot.today{ box-shadow:0 0 0 2px var(--chalk); }
 
-  .today-card .sesname{ font-size:24px; margin:4px 0 2px; }
-  .today-card .sesmeta{ font-size:13px; color:var(--steel); margin-bottom:16px; }
+  /* Today's session — the one thing this screen exists to answer */
+  .hero{
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:22px 18px;
+  }
+  .hero.complete{ border-color:var(--patina); }
+  .heroname{ font-size:28px; margin:6px 0 4px; line-height:1.05; }
+  .herometa{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--steel);
+    letter-spacing:0.03em;
+  }
+  /* Name on its own line, prescription beneath in letterspaced capitals.
+     Gold stays off this list entirely — it is spent on the eyebrow and the
+     button, and nowhere else on the card. */
+  .exlist{ margin:18px 0 20px; }
+  .exline{ display:block; padding:13px 0; border-bottom:1px solid var(--hairline); }
+  .exline:last-child{ border-bottom:none; }
+  .exlname{
+    display:block; font-size:15px; font-weight:500; color:var(--chalk);
+    margin-bottom:5px; line-height:1.25;
+  }
+  .exspec{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.16em;
+    text-transform:uppercase; color:var(--steel); font-variant-numeric:tabular-nums;
+  }
+  .exspec b{ color:var(--chalk); font-weight:500; }
+  /* rows that open a progress view */
+  .exline.tappable{
+    width:100%; text-align:left; background:none; color:inherit;
+    display:block; -webkit-tap-highlight-color:transparent;
+  }
+  .exline.tappable:active{ background:var(--panel-raised); }
+
+  .chartwrap{ margin-top:16px; }
+  .spark{ width:100%; height:84px; display:block; }
+  .chartaxis{
+    display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--steel); margin-top:6px;
+  }
+  .cardmeta.up{ color:var(--patina); }
+  .cardmeta.down{ color:var(--danger); }
+  .finishcard.pr{ border-color:var(--gold); }
+
+  /* Compact inline form, kept where a stacked row would double the height:
+     the wizard's tappable plan rows and the training log. */
+  .pr-num{
+    font-family:'IBM Plex Mono',monospace; flex-shrink:0; white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .xs-sets{ color:var(--chalk-dim); font-weight:500; }
+  .xs-x{ color:var(--steel); padding:0 4px; font-size:0.85em; }
+  .xs-reps{ color:var(--chalk); font-weight:500; }
+  .planrow.open .xs-sets, .planrow.open .xs-reps{ color:var(--gold); }
+  .logbtn-home{
+    height:54px; font-family:'Oswald',sans-serif; text-transform:uppercase;
+    font-size:17px; letter-spacing:0.07em; font-weight:600;
+  }
+  .nextup{
+    margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--steel);
+  }
+  .nextup b{ color:var(--chalk); font-weight:600; }
+
+  .cardhead{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .cardmeta{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--chalk-dim); }
+
+  /* Week strip — real dates, so past days show what actually happened */
+  .weekstrip{ display:flex; gap:5px; margin-top:14px; }
+  .wday{
+    flex:1; border-radius:9px; background:var(--panel-raised); border:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; padding:8px 0 7px;
+  }
+  .wday .wl{ font-size:9.5px; letter-spacing:0.08em; color:var(--steel); text-transform:uppercase; }
+  .wday .wn{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--chalk-dim); }
+  .wday.scheduled{ border-color:var(--steel); }
+  .wday.scheduled .wn{ color:var(--chalk); }
+  .wday.done{ background:var(--patina); border-color:var(--patina); }
+  .wday.done .wl, .wday.done .wn{ color:#0d1a0e; }
+  .wday.missed{ border-color:var(--danger-dim); }
+  .wday.missed .wn{ color:var(--danger); }
+  .wday.today{ box-shadow:0 0 0 2px var(--gold); }
+
+  /* Routine summary — a tappable row, not a wall of training theory */
+  .routinerow{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    width:100%; text-align:left; background:var(--panel);
+    border:1px solid var(--line); border-radius:var(--radius); padding:15px 18px;
+    color:var(--chalk);
+  }
+  .routinerow .rname{ font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:0.02em; }
+  .routinerow .rmeta{ font-size:12px; color:var(--steel); margin-top:3px; }
+  .chev-r{ color:var(--steel); font-size:20px; }
+
+  /* ---------- Bottom tab bar ---------- */
+  .tabbar{
+    position:sticky; bottom:0; z-index:20;
+    display:flex; gap:4px; padding:8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    background:var(--bg); border-top:1px solid var(--hairline);
+  }
+  .tab{
+    flex:1; background:none; color:var(--steel);
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:7px 0 5px; border-radius:10px;
+    font-size:10.5px; text-transform:uppercase; letter-spacing:0.07em;
+  }
+  .tab svg{ display:block; }
+  .tab.on{ color:var(--gold); }
 
   /* ---------- Barbell / plate visual ---------- */
   .barbell{
@@ -167,13 +342,13 @@
   }
   .plate-side{ display:flex; align-items:center; gap:2px; }
   .plate-side.right{ flex-direction:row-reverse; }
-  .plate{ border-radius:3px; background:var(--rust); flex-shrink:0; }
+  .plate{ border-radius:3px; background:var(--gold); flex-shrink:0; }
   .bar-rod{ width:60px; height:6px; background:var(--steel); border-radius:2px; }
   .loadlabel{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--steel); margin-bottom:10px; }
 
   /* ---------- Gym focus mode: one set at a time, no keyboard, no scrolling ---------- */
   .focus-screen{
-    min-height:100vh; display:flex; flex-direction:column;
+    min-height:100vh; min-height:100dvh; display:flex; flex-direction:column;
     background:var(--bg);
   }
   .focus-top{
@@ -185,11 +360,49 @@
     border:1px solid var(--line); color:var(--steel); font-size:18px;
     display:flex; align-items:center; justify-content:center;
   }
-  .progress-dots{ display:flex; gap:6px; align-items:center; }
-  .progress-dots .pd{ width:7px; height:7px; border-radius:50%; background:var(--line); }
-  .progress-dots .pd.done{ background:var(--patina); }
-  .progress-dots .pd.current{ background:var(--rust); width:20px; border-radius:4px; }
-  .focus-top .spacer{ width:44px; }
+  .focus-progress{
+    flex:1; height:5px; border-radius:3px; background:var(--line);
+    overflow:hidden; margin:0 14px;
+  }
+  .focus-progress i{ display:block; height:100%; width:0; background:var(--patina); border-radius:3px; }
+  .focus-count{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--steel);
+    min-width:44px; text-align:right;
+  }
+
+  /* per-set dots for the exercise you're currently on */
+  .setdots{ display:flex; gap:7px; justify-content:center; align-items:center; margin-top:11px; }
+  .setdots i{ width:9px; height:9px; border-radius:50%; background:var(--line); }
+  .setdots i.done{ background:var(--patina); }
+  .setdots i.current{ background:var(--gold); width:26px; border-radius:5px; }
+
+  /* ---------- Rest timer ---------- */
+  .restband{
+    width:100%; max-width:330px; margin:16px 0 4px;
+    background:var(--panel); border:1px solid var(--gold-deep);
+    border-radius:12px; padding:11px 13px 10px;
+  }
+  .restband.ready{ border-color:var(--patina); }
+  .restrow{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .restlabel{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--steel);
+  }
+  .resttime{
+    font-family:'IBM Plex Mono',monospace; font-size:27px; font-weight:600;
+    color:var(--gold); line-height:1; font-variant-numeric:tabular-nums;
+  }
+  .restband.ready .resttime{ color:var(--patina); }
+  .restacts{ display:flex; gap:6px; }
+  .restacts button{
+    background:var(--panel-raised); border:1px solid var(--line); color:var(--chalk-dim);
+    font-size:11.5px; padding:8px 11px; border-radius:8px;
+    text-transform:uppercase; letter-spacing:0.05em;
+  }
+  .restacts button:active{ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
+  .restbar{ height:4px; background:var(--line); border-radius:2px; margin-top:9px; overflow:hidden; }
+  .restbar i{ display:block; height:100%; width:0; background:var(--gold); }
+  .restband.ready .restbar i{ background:var(--patina); }
 
   .focus-body{
     flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -197,7 +410,7 @@
   }
   .focus-exname{ font-family:'Oswald',sans-serif; font-size:26px; letter-spacing:0.02em; line-height:1.15; }
   .focus-setlabel{
-    font-family:'IBM Plex Mono',monospace; color:var(--rust); font-size:13px;
+    font-family:'IBM Plex Mono',monospace; color:var(--gold); font-size:13px;
     text-transform:uppercase; letter-spacing:0.1em; margin-top:6px;
   }
   .focus-prev{ font-size:12.5px; color:var(--steel); margin-top:2px; min-height:16px; }
@@ -206,20 +419,20 @@
     margin-top:2px; min-height:14px;
   }
 
-  .stepper-block{ margin-top:22px; }
-  .stepper-row{ display:flex; align-items:center; justify-content:center; gap:16px; }
+  .stepper-block{ margin-top:20px; }
+  .stepper-row{ display:flex; align-items:center; justify-content:center; gap:14px; }
   .stepbtn{
-    width:58px; height:58px; border-radius:50%; background:var(--panel-raised);
-    border:1px solid var(--line); color:var(--chalk); font-size:26px; line-height:1;
+    width:64px; height:64px; border-radius:50%; background:var(--panel-raised);
+    border:1px solid var(--line); color:var(--chalk); font-size:28px; line-height:1;
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
-    -webkit-tap-highlight-color:transparent; user-select:none;
+    -webkit-tap-highlight-color:transparent; user-select:none; touch-action:manipulation;
   }
-  .stepbtn:active{ background:var(--rust); border-color:var(--rust); }
+  .stepbtn:active{ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
   .bignum-wrap{ display:flex; flex-direction:column; align-items:center; width:130px; }
   .bignum{
-    font-family:'IBM Plex Mono',monospace; font-size:42px; font-weight:600;
+    font-family:'IBM Plex Mono',monospace; font-size:46px; font-weight:600;
     background:none; border:none; color:var(--chalk); text-align:center;
-    width:100%; padding:0; -moz-appearance:textfield;
+    width:100%; padding:0; -moz-appearance:textfield; font-variant-numeric:tabular-nums;
   }
   .bignum::-webkit-outer-spin-button, .bignum::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
   .bignum-unit{
@@ -229,19 +442,36 @@
 
   .focus-bb{ margin-top:20px; }
 
-  .focus-actions{ padding:16px 20px 26px; display:flex; flex-direction:column; gap:12px; }
-  .logbtn{
-    height:64px; border-radius:14px; font-family:'Oswald',sans-serif; font-size:19px;
-    letter-spacing:0.04em; text-transform:uppercase; background:var(--rust); color:#fff; width:100%;
+  .focus-actions{
+    padding:14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    display:flex; flex-direction:column; gap:6px;
   }
-  .logbtn:active{ background:var(--rust-dim); }
+  .logbtn{
+    height:72px; border-radius:14px; font-family:'Oswald',sans-serif; font-size:21px;
+    letter-spacing:0.05em; text-transform:uppercase; width:100%;
+    background:var(--gold); color:var(--on-gold);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.16);
+    touch-action:manipulation;
+  }
+  .logbtn:active{ background:var(--gold-press); box-shadow:none; }
   .logbtn.done-state{ background:var(--patina); color:#0d1a0e; }
-  .focus-links{ display:flex; justify-content:space-between; }
-  .focus-links button{ background:none; color:var(--steel); font-size:13px; padding:10px 6px; text-transform:uppercase; letter-spacing:0.04em; }
-  .focus-links button:disabled{ opacity:0.3; }
+  .focus-links{ display:flex; justify-content:space-between; align-items:center; }
+  .focus-links button{
+    background:none; color:var(--chalk-dim); font-size:13px; padding:13px 14px;
+    text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .focus-links button:disabled{ opacity:0.25; }
+  .undo-link{ color:var(--patina) !important; }
+  .warm-link.on{ color:var(--gold) !important; }
+  /* "End workout" is destructive — keep it off the row your thumb lands on */
+  .focus-end{ text-align:center; border-top:1px solid var(--line); margin-top:2px; }
+  .focus-end button{
+    background:none; color:var(--steel); font-size:11.5px; padding:11px;
+    text-transform:uppercase; letter-spacing:0.07em; opacity:0.8;
+  }
 
   .finish-screen{
-    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:30px; text-align:center; gap:6px;
   }
   .finish-screen .fi{ font-size:44px; color:var(--patina); margin-bottom:6px; }
@@ -265,34 +495,123 @@
   /* ---------- Training log / history ---------- */
   .statrow{ display:flex; gap:10px; }
   .statcard{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 8px; text-align:center; }
-  .statnum{ font-family:'IBM Plex Mono',monospace; font-size:21px; font-weight:600; color:var(--rust); }
+  .statnum{ font-family:'IBM Plex Mono',monospace; font-size:21px; font-weight:600; color:var(--gold); }
   .statlabel{ font-size:10px; color:var(--steel); text-transform:uppercase; letter-spacing:0.04em; margin-top:4px; }
 
   .heatgrid{ display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-top:12px; }
+  .heatgrid.heathead{ margin-top:14px; margin-bottom:-4px; }
+  .hlabel{
+    text-align:center; font-size:9.5px; letter-spacing:0.08em; color:var(--steel);
+    text-transform:uppercase;
+  }
   .hcell{
     aspect-ratio:1; border-radius:6px; display:flex; align-items:center; justify-content:center;
     font-family:'IBM Plex Mono',monospace; font-size:10px; background:var(--panel-raised);
     border:1px solid var(--line); color:var(--steel);
   }
-  .hcell.done{ background:var(--rust); border-color:var(--rust); color:#fff; }
-  .hcell.missed{ border-color:var(--rust-dim); color:var(--rust-dim); }
-  .hcell.scheduled{ border-color:var(--steel); }
-  .hcell.blank{ opacity:0.35; }
-  .hcell.istoday{ box-shadow:0 0 0 2px var(--chalk); }
+  .hcell.done{ background:var(--patina); border-color:var(--patina); color:#0d1a0e; }
+  .hcell.missed{ border-color:var(--danger-dim); color:var(--danger); }
+  .hcell.scheduled{ border-color:var(--steel); color:var(--chalk-dim); }
+  .hcell.blank{ opacity:0.3; }
+  .hcell.future{ opacity:0.55; }
+  .hcell.istoday{ box-shadow:0 0 0 2px var(--gold); opacity:1; }
 
   .heatlegend{ display:flex; gap:14px; margin-top:12px; font-size:11px; color:var(--steel); flex-wrap:wrap; }
   .heatlegend .lg{ display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:5px; vertical-align:middle; }
-  .heatlegend .lg.done{ background:var(--rust); }
-  .heatlegend .lg.missed{ background:var(--rust-dim); }
+  .heatlegend .lg.done{ background:var(--patina); }
+  .heatlegend .lg.missed{ background:var(--panel-raised); border:1px solid var(--danger-dim); }
   .heatlegend .lg.scheduled{ background:var(--panel-raised); border:1px solid var(--steel); }
 
+  /* Logged sessions use the same shape as the today card: gold eyebrow,
+     condensed name, then stacked rows with the spec line beneath each. */
   .logday{ margin-bottom:12px; }
-  .logdate{ font-family:'Oswald',sans-serif; font-size:16px; letter-spacing:0.02em; }
-  .logsession{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--rust); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
-  .logexlist{ border-top:1px solid var(--line); margin-top:8px; padding-top:8px; }
-  .loglex{ display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:5px 0; }
-  .logexname{ color:var(--chalk); }
-  .logexsets{ color:var(--steel); font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right; }
+  .logname{ font-size:22px; margin:6px 0 2px; line-height:1.05; }
+  .logday .exlist{ margin:14px 0 0; }
+  .dayflag{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:9px; }
+  .reasontag{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--danger); border:1px solid var(--danger-dim);
+    border-radius:20px; padding:3px 9px;
+  }
+  .reasonnote{ font-size:12.5px; color:var(--chalk-dim); line-height:1.45; }
+
+  /* ---------- Baseline step ---------- */
+  .baseline-note{
+    background:var(--gold-wash); border:1px solid var(--gold-dim);
+    border-radius:10px; padding:11px 13px; margin:14px 0 18px;
+    font-size:12.5px; line-height:1.5; color:var(--chalk-dim);
+  }
+  .baseline-note b{ color:var(--chalk); font-weight:600; }
+  .baserow{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:11px 16px; border-bottom:1px solid var(--hairline);
+  }
+  .baserow:last-child{ border-bottom:none; }
+  .basename{ flex:1; min-width:0; font-size:14.5px; line-height:1.3; }
+  .basespec{
+    display:block; font-family:'IBM Plex Mono',monospace; font-size:10px;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--steel); margin-top:3px;
+  }
+  .unitrow{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-top:20px; padding-top:16px; border-top:1px solid var(--line);
+  }
+  .unittoggle{ display:flex; gap:5px; }
+  .unittoggle button{
+    background:var(--panel-raised); border:1px solid var(--line); color:var(--chalk-dim);
+    border-radius:8px; padding:9px 13px; font-size:13px;
+  }
+  .unittoggle button.on{ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
+
+  .baseinput{ display:flex; align-items:baseline; gap:6px; flex-shrink:0; }
+  .baseinput input{
+    width:78px; text-align:right; padding:9px 10px; font-size:15px;
+    font-variant-numeric:tabular-nums;
+  }
+  .baseunit{
+    font-family:'IBM Plex Mono',monospace; font-size:11px;
+    color:var(--steel); text-transform:uppercase; letter-spacing:0.08em;
+  }
+
+  /* ---------- Floor note in the gym ---------- */
+  .floornote{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.11em;
+    text-transform:uppercase; margin-top:5px; min-height:14px;
+  }
+  .floornote .under{ color:var(--danger); }
+  .floornote .at{ color:var(--gold); }
+  .floornote .above{ color:var(--patina); }
+
+  /* ---------- Finish screen cards ---------- */
+  .finishcard{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:15px 16px; margin-top:18px; max-width:320px; width:100%; text-align:left;
+  }
+  .finishcard.under{ border-color:var(--danger-dim); }
+  .finishcard.raised{ border-color:var(--patina); }
+  .fcbody{ font-size:13.5px; color:var(--chalk-dim); line-height:1.55; margin-top:5px; }
+  .fcbody b{ color:var(--chalk); font-weight:600; }
+  .fchint{ font-size:12.5px; color:var(--steel); line-height:1.5; margin-top:9px; }
+  .reasons{ display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .reason{
+    background:var(--panel-raised); border:1px solid var(--line); color:var(--chalk-dim);
+    border-radius:20px; padding:7px 11px; font-size:12px;
+  }
+  .reason.on{ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
+  .daynote{ margin-top:10px; font-size:13px; font-family:'Inter',sans-serif; }
+  .finishcard.stalled{ border-color:var(--gold-dim); }
+  .deloadbtn{ margin-top:9px; font-size:13.5px; padding:11px; }
+  .deloadbtn.deloaded{ color:var(--patina); border-color:var(--patina); }
+
+  .floorline{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:11px 0 4px; border-top:1px solid var(--line); margin-top:11px;
+  }
+  .floorval{
+    font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--gold);
+    margin-left:8px; font-variant-numeric:tabular-nums;
+  }
+  .floorreset{ color:var(--danger) !important; }
 
 
   .pr-badge{
@@ -307,15 +626,86 @@
 
   .steps{ display:flex; gap:6px; margin-bottom:18px; }
   .steps .dot{ flex:1; height:3px; border-radius:2px; background:var(--line); }
-  .steps .dot.active{ background:var(--rust); }
+  .steps .dot.active{ background:var(--gold); }
   .steps .dot.past{ background:var(--patina); }
+
+  .backfillzone{ margin-top:22px; text-align:center; }
+  .backupzone{
+    margin-top:26px; padding-top:20px; border-top:1px solid var(--line); text-align:center;
+  }
+  .pastbanner{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.12em;
+    text-transform:uppercase; color:var(--on-gold); background:var(--gold);
+    border-radius:20px; padding:4px 12px; margin-bottom:12px;
+  }
+  .focus-end{ display:flex; align-items:center; justify-content:center; gap:2px; }
+  .enddot{ color:var(--steel); font-size:11px; }
+  .backuphint{
+    font-size:12px; color:var(--steel); line-height:1.5;
+    max-width:300px; margin:8px auto 12px;
+  }
+  .backuprow{ display:flex; gap:10px; max-width:300px; margin:0 auto; }
+  .backupstat{ font-size:12px; margin-top:10px; min-height:16px; }
+  .backupstat.good{ color:var(--patina); }
+  .backupstat.bad{ color:var(--danger); }
+
+  /* Set apart from the content above it so it is never a mis-tap. */
+  .dangerzone{
+    margin-top:26px; padding-top:20px; border-top:1px solid var(--line); text-align:center;
+  }
+  .dangerhint{
+    font-size:12px; color:var(--steel); line-height:1.5; margin-top:10px;
+    max-width:300px; margin-left:auto; margin-right:auto;
+  }
+
+  /* ---------- Time travel bar (testing only) ---------- */
+  .devbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:200;
+    background:#0E0E10; border-top:1px solid var(--line);
+    padding:9px 12px calc(9px + env(safe-area-inset-bottom, 0px));
+  }
+  .devbar.shifted{ border-top-color:var(--gold); background:#141008; }
+  .devrow{
+    max-width:520px; margin:0 auto; display:flex; align-items:center;
+    justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .devwhen{ display:flex; align-items:baseline; gap:7px; min-width:0; }
+  .devlabel{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--steel);
+  }
+  .devbar.shifted .devlabel{ color:var(--gold); }
+  .devdate{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--chalk); }
+  .devoff{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--on-gold);
+    background:var(--gold); border-radius:4px; padding:1px 6px;
+  }
+  .devbtns{ display:flex; gap:4px; }
+  .devbtns button{
+    background:var(--panel-raised); border:1px solid var(--line); color:var(--chalk-dim);
+    border-radius:7px; padding:6px 9px; font-family:'IBM Plex Mono',monospace; font-size:11.5px;
+    min-width:32px;
+  }
+  .devbtns button:active:not(:disabled){ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
+  .devbtns button:disabled{ opacity:0.3; }
+  /* keep the bar from covering the tab bar / log button */
+  body:has(.devbar:not(:empty)) .tabbar{ margin-bottom:52px; }
+  body:has(.devbar:not(:empty)) .focus-actions{ padding-bottom:64px; }
 
   .empty{ text-align:center; padding:40px 20px; color:var(--steel); }
   .empty .plateicon{ font-size:32px; margin-bottom:10px; opacity:0.5; }
 
+  .warnbar{
+    background:rgba(193,68,58,0.10); border:1px solid var(--danger-dim);
+    border-radius:10px; padding:11px 13px; font-size:12.5px;
+    line-height:1.45; color:var(--chalk-dim);
+  }
+  .warnbar b{ color:var(--chalk); font-weight:600; }
+
   @media (prefers-reduced-motion:no-preference){
     .card, .tpl, .btn{ transition:transform 0.12s ease, background 0.15s ease, border-color 0.15s ease; }
     .btn-primary:active{ transform:scale(0.98); }
+    .chev{ transition:transform 0.15s ease, color 0.15s ease; }
   }
 </style>
 </head>
@@ -335,8 +725,31 @@ const DAYS = [
 ];
 const DAY_ORDER = DAYS.map(d=>d.k);
 
+/* What you load the weight onto. Drives the plate diagram, the bar weight, and
+   whether a "weight" even makes sense. Classified from the name so the templates
+   stay readable and custom exercises get a sensible guess too; it is stored on
+   the exercise afterwards, so it can be corrected per exercise. */
+function equipmentFor(name){
+  const n = (name || '').toLowerCase();
+  if(/plank|hollow|dead hang/.test(n))                              return 'bodyweight';
+  if(/cable|pushdown|face pull|fly|pulldown/.test(n))               return 'cable';
+  if(/machine|leg press|leg curl|leg extension|pec deck/.test(n))   return 'machine';
+  if(/dumbbell|\bdb\b|lateral raise/.test(n))                       return 'dumbbell';
+  if(/pull-?up|chin-?up|dip|push-?up|rollout|sit-?up|crunch/.test(n)) return 'bodyweight';
+  if(/barbell|bench press|squat|deadlift|overhead press|row|curl|calf raise|lunge|hip thrust|shrug/.test(n))
+                                                                    return 'barbell';
+  return 'other';
+}
+function usesBar(e){ return e && e.equipment === 'barbell'; }
+// Bodyweight movements can still be loaded (weighted pull-ups), so they keep a weight field.
+
 function ex(name, sets, repMin, repMax, inc, isTime){
-  return { name, sets, repMin, repMax, inc: inc===undefined?2.5:inc, isTime: !!isTime };
+  return {
+    name, sets, repMin, repMax,
+    inc: inc===undefined ? 2.5 : inc,
+    isTime: !!isTime,
+    equipment: equipmentFor(name),
+  };
 }
 
 const TEMPLATES = [
@@ -394,7 +807,25 @@ let state = null;
 const STORE_KEY = 'auxano-state-v1';
 
 function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
-function todayKey(){ return new Date().toISOString().slice(0,10); }
+// Local date, not UTC — toISOString() would roll the day over at the wrong hour
+// and file a late-evening session under tomorrow (or a morning one under yesterday).
+function dateKey(d){
+  return d.getFullYear() + '-' +
+         String(d.getMonth()+1).padStart(2,'0') + '-' +
+         String(d.getDate()).padStart(2,'0');
+}
+/* Every "what day is it" read in the app goes through nowDate(), so a simulated
+   offset can move the whole app through time for testing. Offset 0 = real clock. */
+function nowDate(){
+  const d = new Date();
+  const off = state && state.dev ? (state.dev.dayOffset || 0) : 0;
+  return off ? addDays(d, off) : d;
+}
+function todayKey(){ return dateKey(nowDate()); }
+function isTimeTravelling(){ return !!(state && state.dev && state.dev.dayOffset); }
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+// Monday-start week containing `d`
+function weekStart(d){ return addDays(d, -DAY_ORDER.indexOf(weekdayKey(d))); }
 function weekdayKey(date){ const idx=(date.getDay()+6)%7; return DAY_ORDER[idx]; } // mon=0
 function hasLoggedDay(dateKey){
   const d = state.completions[dateKey];
@@ -402,42 +833,258 @@ function hasLoggedDay(dateKey){
 }
 
 function freshState(){
-  return { setup:null, history:{}, completions:{} };
+  // floors: exId -> the working weight this exercise must never drop below.
+  // Seeded from your baseline week, then ratcheted upward as you progress.
+  // dev.dayOffset: days to shift "today" by, for simulating a training block.
+  return {
+    setup:null, history:{}, completions:{}, floors:{},
+    settings:{ unit:'kg', bar:20 },
+    dev:{ dayOffset:0, panel:false },
+  };
+}
+
+/* ============================= UNITS =============================
+   Weights are stored in whatever unit you picked. Switching units converts
+   everything already recorded, so history stays meaningful rather than
+   silently reinterpreting 100kg as 100lb. */
+const UNITS = {
+  kg: { label:'kg', bar:20, plates:[25,20,15,10,5,2.5,1.25], steps:[0,0.5,1,1.25,2,2.5,5,10] },
+  lb: { label:'lb', bar:45, plates:[45,35,25,10,5,2.5],      steps:[0,1,2.5,5,10,20,25] },
+};
+function unitKey(){ return (state && state.settings && state.settings.unit) === 'lb' ? 'lb' : 'kg'; }
+function unitDef(){ return UNITS[unitKey()]; }
+function unitLabel(){ return unitDef().label; }
+function barWeight(){
+  const b = state && state.settings ? Number(state.settings.bar) : NaN;
+  return isFinite(b) && b > 0 ? b : unitDef().bar;
+}
+const KG_PER_LB = 0.45359237;
+// Round to something you can actually load on a bar.
+function roundToPlate(v, unit){
+  const smallest = unit === 'lb' ? 2.5 : 1.25;
+  return Math.round(v / smallest) * smallest;
+}
+function convertWeight(v, from, to){
+  if(from === to || !isFinite(v) || v === 0) return v;
+  const raw = from === 'kg' ? v / KG_PER_LB : v * KG_PER_LB;
+  return roundToPlate(raw, to);
+}
+
+/* ============================= STORAGE ============================= */
+/* window.storage exists only inside the artifact sandbox. A plain browser has
+   localStorage — which itself throws on write in some private-browsing modes.
+   Try each in order, keep whichever works, and fall back to memory so the app
+   still runs for the current session rather than failing silently. */
+let memoryStore = {};
+const STORAGE_BACKENDS = [
+  {
+    id:'host',
+    available: ()=> !!(window.storage && window.storage.get && window.storage.set),
+    get: async k => { const r = await window.storage.get(k); return r && r.value != null ? r.value : null; },
+    set: async (k,v) => { await window.storage.set(k,v); },
+  },
+  {
+    id:'local',
+    available(){
+      try{
+        if(!window.localStorage) return false;
+        window.localStorage.setItem('__auxano_probe__','1');   // Safari private mode throws here
+        window.localStorage.removeItem('__auxano_probe__');
+        return true;
+      }catch(e){ return false; }
+    },
+    get: async k => window.localStorage.getItem(k),
+    set: async (k,v) => { window.localStorage.setItem(k,v); },
+  },
+  {
+    id:'memory',
+    available: ()=> true,
+    get: async k => (k in memoryStore ? memoryStore[k] : null),
+    set: async (k,v) => { memoryStore[k] = v; },
+  },
+];
+let storageBackend = null;
+function pickBackend(){
+  if(storageBackend) return storageBackend;
+  for(const b of STORAGE_BACKENDS){
+    try{ if(b.available()){ storageBackend = b; break; } }catch(e){ /* try the next one */ }
+  }
+  return storageBackend || STORAGE_BACKENDS[STORAGE_BACKENDS.length-1];
+}
+function storageIsDurable(){ return pickBackend().id !== 'memory'; }
+
+/* A saved blob can be older than the code reading it, or half-written, or point at
+   a routine that no longer exists. Normalise it here so a bad payload sends you to
+   the wizard instead of white-screening on the first render. */
+function normalizeState(raw){
+  const s = freshState();
+  if(!raw || typeof raw !== 'object') return s;
+  if(raw.history && typeof raw.history === 'object') s.history = raw.history;
+  if(raw.completions && typeof raw.completions === 'object') s.completions = raw.completions;
+  if(raw.dev && typeof raw.dev === 'object'){
+    const off = Number(raw.dev.dayOffset);
+    s.dev.dayOffset = isFinite(off) ? Math.round(off) : 0;
+    s.dev.panel = !!raw.dev.panel;
+  }
+  if(raw.floors && typeof raw.floors === 'object'){
+    // a corrupt floor would silently cap every future suggestion, so only keep real numbers
+    Object.keys(raw.floors).forEach(k=>{
+      const v = Number(raw.floors[k]);
+      if(isFinite(v) && v >= 0) s.floors[k] = v;
+    });
+  }
+
+  if(raw.settings && typeof raw.settings === 'object'){
+    s.settings.unit = raw.settings.unit === 'lb' ? 'lb' : 'kg';
+    const b = Number(raw.settings.bar);
+    s.settings.bar = isFinite(b) && b >= 0 ? b : UNITS[s.settings.unit].bar;
+  }
+
+  s.setup = normalizeSetup(raw.setup);
+  return s;
+}
+
+/* The plan is stored whole — session ids AND names — rather than looked up from
+   TEMPLATES at render time. Editing a template (or using a custom routine) can
+   no longer shift the meaning of a plan somebody is already training on.
+   Older saves that predate `sessions` are migrated from their template here. */
+function normalizeSetup(setup){
+  if(!setup || typeof setup !== 'object') return null;
+  if(!setup.dayMap || typeof setup.dayMap !== 'object') return null;
+  if(!setup.exercises || typeof setup.exercises !== 'object') return null;
+
+  let sessions = Array.isArray(setup.sessions) ? setup.sessions : null;
+  if(!sessions){
+    const tpl = TEMPLATES.find(t => t.id === setup.templateId);
+    if(!tpl) return null;                       // unknown template and no stored sessions
+    sessions = tpl.sessions.map(s => ({ id:s.id, name:s.name }));
+  }
+  sessions = sessions
+    .filter(s => s && typeof s.id === 'string' && Array.isArray(setup.exercises[s.id]))
+    .map(s => ({ id:s.id, name: String(s.name || s.id) }));
+  if(!sessions.length) return null;
+
+  // exercises must carry ids and equipment; older saves have neither
+  const exercises = {};
+  sessions.forEach(s=>{
+    exercises[s.id] = setup.exercises[s.id].map(e=>({
+      ...e,
+      id: e.id || (s.id + '__' + slug(e.name)),
+      equipment: e.equipment || equipmentFor(e.name),
+    }));
+  });
+
+  // drop day mappings pointing at sessions that no longer exist
+  const dayMap = {};
+  Object.keys(setup.dayMap).forEach(k=>{
+    if(sessions.some(s => s.id === setup.dayMap[k])) dayMap[k] = setup.dayMap[k];
+  });
+
+  return {
+    templateId: setup.templateId || 'custom',
+    routineName: setup.routineName ||
+      (TEMPLATES.find(t=>t.id===setup.templateId) || {}).name || 'Custom routine',
+    sessions, dayMap, exercises,
+  };
+}
+
+/* Plan lookups read the stored plan. The TEMPLATES fallback covers a setup that
+   was assembled in memory without going through normalizeSetup — it is a safety
+   net, not the normal path. */
+function planSessions(){
+  if(!state.setup) return [];
+  if(Array.isArray(state.setup.sessions) && state.setup.sessions.length) return state.setup.sessions;
+  const tpl = TEMPLATES.find(t => t.id === state.setup.templateId);
+  return tpl ? tpl.sessions.map(s => ({ id:s.id, name:s.name })) : [];
+}
+function sessionById(id){ return planSessions().find(s => s.id === id) || null; }
+function sessionName(id){ const s = sessionById(id); return s ? s.name : 'Workout'; }
+function exercisesFor(id){ return (state.setup && state.setup.exercises && state.setup.exercises[id]) || []; }
+function routineName(){
+  if(!state.setup) return '';
+  if(state.setup.routineName) return state.setup.routineName;
+  const tpl = TEMPLATES.find(t => t.id === state.setup.templateId);
+  return tpl ? tpl.name : 'Custom routine';
 }
 
 async function loadState(){
-  try{
-    const r = await window.storage.get(STORE_KEY);
-    state = r && r.value ? JSON.parse(r.value) : freshState();
-  }catch(e){ state = freshState(); }
+  const b = pickBackend();
+  let raw = null;
+  try{ raw = await b.get(STORE_KEY); }
+  catch(e){ raw = null; }
+  let parsed = null;
+  if(raw){
+    try{ parsed = JSON.parse(raw); }
+    catch(e){ parsed = null; }        // corrupt payload — start clean rather than crash
+  }
+  state = normalizeState(parsed);
 }
+
+let saveFailed = false;
 async function saveState(){
-  try{ await window.storage.set(STORE_KEY, JSON.stringify(state)); }
-  catch(e){ console.error('save failed', e); }
+  const payload = JSON.stringify(state);
+  const b = pickBackend();
+  try{
+    await b.set(STORE_KEY, payload);
+    saveFailed = false;
+    return true;
+  }catch(e){
+    // quota exceeded, or the backend went away mid-session — demote and retry once
+    // so the current workout is at least not lost while the app is open
+    console.error('save failed on ' + b.id, e);
+    if(b.id !== 'memory'){
+      storageBackend = STORAGE_BACKENDS[STORAGE_BACKENDS.length-1];
+      try{ await storageBackend.set(STORE_KEY, payload); }catch(e2){}
+    }
+    saveFailed = true;
+    return false;
+  }
 }
 
 /* ============================= IN-APP CONFIRM MODAL ============================= */
 // Sandboxed artifact frames block window.confirm()/alert() silently — this is a real substitute.
-function showConfirm(message, confirmLabel, onYes){
+function showConfirm(message, confirmLabel, onYes, opts){
+  const danger = !!(opts && opts.danger);
+  const returnFocus = document.activeElement;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
-    <div class="modal-card">
-      <p>${message}</p>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalMsg">
+      <p id="modalMsg">${message}</p>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="modalCancel">Cancel</button>
-        <button class="btn btn-primary" id="modalOk">${confirmLabel}</button>
+        <button class="btn ${danger?'btn-danger':'btn-primary'}" id="modalOk">${confirmLabel}</button>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
-  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.remove(); });
-  overlay.querySelector('#modalCancel').addEventListener('click', ()=> overlay.remove());
-  overlay.querySelector('#modalOk').addEventListener('click', ()=>{ overlay.remove(); onYes(); });
+
+  const close = ()=>{
+    document.removeEventListener('keydown', onKey, true);
+    overlay.remove();
+    if(returnFocus && returnFocus.focus) returnFocus.focus();
+  };
+  function onKey(e){
+    if(e.key === 'Escape'){ e.preventDefault(); close(); return; }
+    if(e.key !== 'Tab') return;
+    // keep tabbing inside the dialog while it's open
+    const f = [...overlay.querySelectorAll('button')];
+    if(!f.length) return;
+    const first = f[0], last = f[f.length-1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }
+  document.addEventListener('keydown', onKey, true);
+
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('#modalCancel').addEventListener('click', close);
+  overlay.querySelector('#modalOk').addEventListener('click', ()=>{ close(); onYes(); });
+  // Cancel takes focus, so a stray Enter never confirms a destructive action.
+  overlay.querySelector('#modalCancel').focus();
 }
 
 /* ============================= WIZARD TEMP STATE ============================= */
-let wizard = { step:1, selectedDays:[], templateId:null, dayMap:{}, exercises:null };
+let wizard = { step:1, selectedDays:[], templateId:null, dayMap:{}, exercises:null, openEx:null, baselines:{} };
 
 /* ============================= RENDER ROOT ============================= */
 const root = document.getElementById('app');
@@ -446,6 +1093,82 @@ function render(){
   if(!state.setup){ renderWizard(); }
   else { renderHome(); }
 }
+
+/* ============================= TIME TRAVEL (testing) =============================
+   Simulates days passing so a whole training block can be exercised in one sitting:
+   log a session, jump a day, log the next, watch floors ratchet and streaks build.
+   Lives outside #app so it survives every screen's innerHTML rewrite.
+   Toggle it by tapping the AUXANO wordmark five times. */
+const devBar = document.createElement('div');
+devBar.id = 'devbar';
+document.body.appendChild(devBar);
+
+function shiftDays(n){
+  state.dev.dayOffset = Math.round((state.dev.dayOffset || 0) + n);
+  afterTimeChange();
+}
+function resetTime(){
+  state.dev.dayOffset = 0;
+  afterTimeChange();
+}
+async function afterTimeChange(){
+  await saveState();
+  paintDevBar();
+  // repaint whatever screen is showing so it reflects the new "today"
+  if(focus.active) paintFocus();
+  else if(root.querySelector('.heatgrid')) renderHistory();
+  else render();
+}
+
+function paintDevBar(){
+  if(!state || !state.dev || !state.dev.panel){ devBar.innerHTML = ''; devBar.className = ''; return; }
+  const off = state.dev.dayOffset || 0;
+  const d = nowDate();
+  devBar.className = 'devbar' + (off ? ' shifted' : '');
+  devBar.innerHTML = `
+    <div class="devrow">
+      <div class="devwhen">
+        <span class="devlabel">${off ? 'Simulated' : 'Live'}</span>
+        <span class="devdate">${d.toLocaleDateString(undefined,{weekday:'short', day:'numeric', month:'short'})}</span>
+        ${off ? `<span class="devoff">${off > 0 ? '+' : ''}${off}d</span>` : ''}
+      </div>
+      <div class="devbtns">
+        <button data-shift="-7" aria-label="Back one week">−7</button>
+        <button data-shift="-1" aria-label="Back one day">−1</button>
+        <button data-shift="1" aria-label="Forward one day">+1</button>
+        <button data-shift="7" aria-label="Forward one week">+7</button>
+        <button id="devReset" ${off ? '' : 'disabled'} aria-label="Back to the real date">Now</button>
+        <button id="devClose" aria-label="Hide time travel">✕</button>
+      </div>
+    </div>
+  `;
+  devBar.querySelectorAll('[data-shift]').forEach(b=>
+    b.addEventListener('click', ()=> shiftDays(parseInt(b.dataset.shift,10))));
+  devBar.querySelector('#devReset')?.addEventListener('click', resetTime);
+  devBar.querySelector('#devClose')?.addEventListener('click', async ()=>{
+    state.dev.panel = false;
+    await saveState();
+    paintDevBar();
+  });
+}
+
+// Five taps on the wordmark toggles the panel. Delegated, so it keeps working
+// across every re-render without rebinding.
+let brandTaps = 0, brandTimer = null;
+document.addEventListener('click', async (e)=>{
+  if(!e.target.closest || !e.target.closest('.brand')) return;
+  brandTaps++;
+  clearTimeout(brandTimer);
+  brandTimer = setTimeout(()=>{ brandTaps = 0; }, 1200);
+  if(brandTaps >= 5){
+    brandTaps = 0;
+    state.dev.panel = !state.dev.panel;
+    if(!state.dev.panel) state.dev.dayOffset = 0;   // leaving test mode returns to the real clock
+    await saveState();
+    paintDevBar();
+    if(focus.active) paintFocus(); else render();
+  }
+});
 
 /* ============================= WIZARD ============================= */
 function enterEditSetup(){
@@ -456,16 +1179,21 @@ function enterEditSetup(){
     templateId: s.templateId,
     dayMap: {...s.dayMap},
     exercises: JSON.parse(JSON.stringify(s.exercises)),
+    openEx: null,
+    baselines: {...state.floors},   // edit setup shows your current floors, not blanks
   };
   renderWizard();
 }
+
+const WIZARD_STEPS = 5;
 
 function renderWizard(){
   let body = '';
   if(wizard.step===1) body = wizardStep1();
   else if(wizard.step===2) body = wizardStep2();
   else if(wizard.step===3) body = wizardStep3();
-  else body = wizardStep4();
+  else if(wizard.step===4) body = wizardStep4();
+  else body = wizardStep5();
 
   root.innerHTML = `
     <header class="top">
@@ -474,7 +1202,7 @@ function renderWizard(){
     </header>
     <main>
       <div class="steps">
-        ${[1,2,3,4].map(n=>`<div class="dot ${n<wizard.step?'past':n===wizard.step?'active':''}"></div>`).join('')}
+        ${Array.from({length:WIZARD_STEPS},(_,i)=>i+1).map(n=>`<div class="dot ${n<wizard.step?'past':n===wizard.step?'active':''}"></div>`).join('')}
       </div>
       ${body}
     </main>
@@ -484,17 +1212,108 @@ function renderWizard(){
 }
 
 function wizardStep1(){
+  const u = unitKey();
   return `
     <div>
-      <span class="eyebrow">Step 1 of 4</span>
+      <span class="eyebrow">Step 1 of 5</span>
       <h2 style="font-size:22px;">Which days do you train?</h2>
       <p class="muted" style="margin-top:8px;">Pick every day you plan to lift. You can change this later.</p>
       <div class="daygrid" id="daygrid">
-        ${DAYS.map(d=>`<div class="daychip ${wizard.selectedDays.includes(d.k)?'active':''}" data-day="${d.k}" role="button" tabindex="0">${d.label}</div>`).join('')}
+        ${DAYS.map(d=>`<div class="daychip ${wizard.selectedDays.includes(d.k)?'active':''}"
+            data-day="${d.k}" role="button" tabindex="0"
+            aria-pressed="${wizard.selectedDays.includes(d.k)}"
+            aria-label="${d.full}">${d.label}</div>`).join('')}
       </div>
+
+      <div class="unitrow">
+        <span class="ellabel">Weights in</span>
+        <div class="unittoggle">
+          <button data-unit="kg" class="${u==='kg'?'on':''}" aria-pressed="${u==='kg'}">Kilograms</button>
+          <button data-unit="lb" class="${u==='lb'?'on':''}" aria-pressed="${u==='lb'}">Pounds</button>
+        </div>
+      </div>
+      ${state.setup ? `<p class="muted" style="margin-top:8px; font-size:12.5px;">
+        Switching units converts everything you've already logged.</p>` : ''}
+
       <button class="btn btn-primary" id="toStep2" style="margin-top:18px;" ${wizard.selectedDays.length===0?'disabled':''}>Continue</button>
     </div>
   `;
+}
+
+/* Steps 3–5 work off this rather than TEMPLATES directly, so a custom routine
+   walks exactly the same path as a built-in one. */
+function wizardPlan(){
+  if(wizard.templateId === 'custom'){
+    return {
+      name: 'Custom routine',
+      sessions: (wizard.customSessions || [])
+        .filter(s => s.name.trim())
+        .map(s => ({ id:s.id, name:s.name.trim() })),
+    };
+  }
+  const t = TEMPLATES.find(x => x.id === wizard.templateId);
+  return t ? { name:t.name, sessions:t.sessions.map(s=>({id:s.id, name:s.name})) }
+           : { name:'', sessions:[] };
+}
+function newCustomSession(i){
+  return { id: 'cus-' + Date.now().toString(36) + '-' + i, name: '' };
+}
+// Exercise ids must stay unique inside a session, even with repeated names.
+function makeExId(sessionId, name, taken){
+  const base = sessionId + '__' + slug(name);
+  let id = base, n = 2;
+  while(taken.indexOf(id) > -1){ id = base + '-' + n; n++; }
+  return id;
+}
+function defaultExercise(sessionId, name, taken){
+  const eq = equipmentFor(name);
+  const inc = eq === 'barbell' ? (unitKey()==='lb' ? 5 : 2.5)
+            : eq === 'machine' ? (unitKey()==='lb' ? 10 : 5)
+            : (unitKey()==='lb' ? 2.5 : 1.25);
+  return { name, sets:3, repMin:8, repMax:12, inc, isTime:false,
+           equipment:eq, id: makeExId(sessionId, name, taken) };
+}
+
+/* Switching units rewrites every stored weight, so 100kg becomes 220lb rather
+   than silently being re-read as 100lb. */
+async function setUnit(next){
+  const from = unitKey();
+  if(next === from) return;
+  const conv = v => convertWeight(v, from, next);
+
+  Object.keys(state.floors).forEach(k=>{ state.floors[k] = conv(state.floors[k]); });
+  Object.keys(state.history).forEach(k=>{
+    state.history[k].forEach(h=> h.sets.forEach(s=>{ s.weight = conv(s.weight); }));
+  });
+  Object.keys(state.completions).forEach(dk=>{
+    const entry = state.completions[dk];
+    Object.keys(entry).forEach(k=>{
+      if(k === '_meta' || !entry[k].sets) return;
+      entry[k].sets.forEach(s=>{ s.weight = conv(s.weight); });
+    });
+  });
+  const stepUp = (list, v) => list.reduce((b,x)=> Math.abs(x-v) < Math.abs(b-v) ? x : b, list[0]);
+  if(state.setup){
+    Object.keys(state.setup.exercises).forEach(sid=>{
+      state.setup.exercises[sid].forEach(e=>{
+        if(e.inc) e.inc = stepUp(UNITS[next].steps, conv(e.inc));
+      });
+    });
+  }
+  if(wizard && wizard.exercises){
+    Object.keys(wizard.exercises).forEach(sid=>{
+      wizard.exercises[sid].forEach(e=>{
+        if(e.inc) e.inc = stepUp(UNITS[next].steps, conv(e.inc));
+      });
+    });
+  }
+  if(wizard && wizard.baselines){
+    Object.keys(wizard.baselines).forEach(k=>{ wizard.baselines[k] = conv(wizard.baselines[k]); });
+  }
+
+  state.settings.unit = next;
+  state.settings.bar = UNITS[next].bar;
+  await saveState();
 }
 
 function wizardStep2(){
@@ -502,7 +1321,7 @@ function wizardStep2(){
   const isCustom = wizard.templateId === 'custom';
   return `
     <div>
-      <span class="eyebrow">Step 2 of 4</span>
+      <span class="eyebrow">Step 2 of 5</span>
       <h2 style="font-size:22px;">Choose your routine</h2>
       <p class="muted" style="margin-top:8px;">You picked ${n} training day${n===1?'':'s'} a week. Routines built for that frequency are marked.</p>
       <div style="margin-top:16px;">
@@ -540,23 +1359,23 @@ function wizardStep2(){
 }
 
 function wizardStep3(){
-  const tpl = TEMPLATES.find(t=>t.id===wizard.templateId);
+  const plan = wizardPlan();
   const sorted = [...wizard.selectedDays].sort((a,b)=>DAY_ORDER.indexOf(a)-DAY_ORDER.indexOf(b));
   return `
     <div>
-      <span class="eyebrow">Step 3 of 4</span>
+      <span class="eyebrow">Step 3 of 5</span>
       <h2 style="font-size:22px;">Assign sessions to days</h2>
-      <p class="muted" style="margin-top:8px;">We've cycled ${tpl.name} across your training days. Adjust if you'd like.</p>
+      <p class="muted" style="margin-top:8px;">We've cycled ${plan.name} across your training days. Adjust if you'd like.</p>
       <div class="card" style="margin-top:16px;">
         ${sorted.map((dk,i)=>{
           const dObj = DAYS.find(d=>d.k===dk);
-          const current = wizard.dayMap[dk] || tpl.sessions[i % tpl.sessions.length].id;
+          const current = wizard.dayMap[dk] || plan.sessions[i % plan.sessions.length].id;
           wizard.dayMap[dk] = current;
           return `
             <div class="maprow">
               <div class="dname">${dObj.full}</div>
               <select data-daymap="${dk}">
-                ${tpl.sessions.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${s.name}</option>`).join('')}
+                ${plan.sessions.map(s=>`<option value="${s.id}" ${s.id===current?'selected':''}>${s.name}</option>`).join('')}
               </select>
             </div>
           `;
@@ -570,43 +1389,326 @@ function wizardStep3(){
   `;
 }
 
-function wizardStep4(){
-  const tpl = TEMPLATES.find(t=>t.id===wizard.templateId);
-  if(!wizard.exercises){
-    wizard.exercises = {};
-    tpl.sessions.forEach(s=>{
-      wizard.exercises[s.id] = s.exercises.map(e=>({...e, id: s.id+'__'+slug(e.name)}));
-    });
-  }
-  return `
-    <div>
-      <span class="eyebrow">Step 4 of 4</span>
-      <h2 style="font-size:22px;">Review sets & reps</h2>
-      <p class="muted" style="margin-top:8px;">These are your defaults. Edit anything, then start training — weights get logged live during each session.</p>
-      ${tpl.sessions.map(s=>`
-        <div class="sessionblock">
-          <h3>${s.name}</h3>
-          <div class="card">
-            ${wizard.exercises[s.id].map((e,idx)=>`
-              <div class="exrow">
-                <div class="exname">${e.name}</div>
-                <div class="exfields">
-                  <div><label>Sets</label><input type="number" min="1" data-ex="${s.id}|${idx}|sets" value="${e.sets}"></div>
-                  <div><label>${e.isTime?'Min sec':'Min reps'}</label><input type="number" min="0" data-ex="${s.id}|${idx}|repMin" value="${e.repMin}"></div>
-                  <div><label>${e.isTime?'Max sec':'Max reps'}</label><input type="number" min="0" data-ex="${s.id}|${idx}|repMax" value="${e.repMax}"></div>
-                  <div><label>+kg step</label><input type="number" step="0.25" min="0" data-ex="${s.id}|${idx}|inc" value="${e.inc}"></div>
-                </div>
-              </div>
-            `).join('')}
+/* Weight jumps are picked from a list of real plate increments rather than typed —
+   0.25-by-0.25 spinners produce loads nobody can actually put on a bar. */
+function weightSteps(){ return unitDef().steps; }
+
+function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
+
+function repRange(e){
+  const range = e.repMin===e.repMax ? `${e.repMin}` : `${e.repMin}–${e.repMax}`;
+  return range + (e.isTime ? 's' : '');
+}
+function exSummary(e){ return `${e.sets} × ${repRange(e)}`; }
+// Same text, but with each part addressable so the numbers can carry the emphasis.
+function exSummaryHTML(e){
+  return `<span class="xs-sets">${e.sets}</span><span class="xs-x">×</span><span class="xs-reps">${repRange(e)}</span>`;
+}
+// Spelled-out form for the today card: "3 SETS · 4–6 REPS".
+function exSpecCaps(e){
+  return `<b>${e.sets}</b> Sets &nbsp;·&nbsp; <b>${repRange(e)}</b> ${e.isTime ? 'Hold' : 'Reps'}`;
+}
+
+/* Same idiom for a session you've already done, built from what you actually
+   lifted: "3 SETS · 100 KG · 5–6 REPS". Every row takes this shape — when the
+   weight or the reps varied across sets, that value becomes a range rather than
+   breaking the row into a per-set list. */
+function loggedSpecCaps(e){
+  const sets = e.sets || [];
+  if(!sets.length) return '';
+  const unit = e.isTime ? 'Hold' : 'Reps';
+  const sfx  = e.isTime ? 's' : '';
+
+  const range = (vals, suffix)=>{
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    return (lo === hi ? num(lo) : `${num(lo)}–${num(hi)}`) + (suffix || '');
+  };
+
+  const weights = sets.map(s=> s.weight);
+  const reps    = sets.map(s=> s.reps);
+  const weightPart = Math.max(...weights) > 0
+    ? `<b>${range(weights)}</b> ${unitLabel()} &nbsp;·&nbsp; `
+    : '';
+  return `<b>${sets.length}</b> Sets &nbsp;·&nbsp; ${weightPart}<b>${range(reps, sfx)}</b> ${unit}`;
+}
+
+function planRowHTML(sid, idx, e){
+  const key = `${sid}|${idx}`;
+  const open = wizard.openEx === key;
+  const step = e.isTime ? 5 : 1;
+  const repMaxCap = e.isTime ? 300 : 50;
+  const unitNoun = e.isTime ? 'seconds' : 'reps';
+
+  const editHTML = !open ? '' : `
+    <div class="planedit">
+      <div class="editline">
+        <span class="ellabel">Sets</span>
+        <div class="mini">
+          <button class="minibtn" data-adj="${key}|sets|-1" aria-label="One set fewer" ${e.sets<=1?'disabled':''}>–</button>
+          <span class="minival">${e.sets}</span>
+          <button class="minibtn" data-adj="${key}|sets|1" aria-label="One set more" ${e.sets>=10?'disabled':''}>+</button>
+        </div>
+      </div>
+      <div class="editline stacked">
+        <span class="ellabel">${e.isTime?'Hold for':'Reps per set'}</span>
+        <div class="mini-range">
+          <div class="mini">
+            <button class="minibtn" data-adj="${key}|repMin|-${step}" aria-label="Lower ${unitNoun} down" ${e.repMin<=step?'disabled':''}>–</button>
+            <span class="minival">${e.repMin}</span>
+            <button class="minibtn" data-adj="${key}|repMin|${step}" aria-label="Lower ${unitNoun} up" ${e.repMin>=e.repMax?'disabled':''}>+</button>
+          </div>
+          <span class="rangesep">to</span>
+          <div class="mini">
+            <button class="minibtn" data-adj="${key}|repMax|-${step}" aria-label="Upper ${unitNoun} down" ${e.repMax<=e.repMin?'disabled':''}>–</button>
+            <span class="minival">${e.repMax}</span>
+            <button class="minibtn" data-adj="${key}|repMax|${step}" aria-label="Upper ${unitNoun} up" ${e.repMax>=repMaxCap?'disabled':''}>+</button>
           </div>
         </div>
+      </div>
+      <div class="editline">
+        <span class="ellabel">Weight jump</span>
+        <div class="mini">
+          <button class="minibtn" data-adj="${key}|inc|-1" aria-label="Smaller weight jump" ${e.inc<=weightSteps()[0]?'disabled':''}>–</button>
+          <span class="minival">${e.inc ? e.inc+unitLabel() : 'none'}</span>
+          <button class="minibtn" data-adj="${key}|inc|1" aria-label="Bigger weight jump" ${e.inc>=weightSteps()[weightSteps().length-1]?'disabled':''}>+</button>
+        </div>
+      </div>
+      <div class="helptext">
+        ${e.inc
+          ? `Hit ${e.repMax} ${unitNoun} on all ${e.sets} sets and Auxano adds ${e.inc}${unitLabel()} next time. Otherwise you stay put and chase more ${unitNoun}.`
+          : `No weight added — you progress by working up to ${e.repMax} ${unitNoun} on all ${e.sets} sets.`}
+      </div>
+      <div class="rowactions">
+        <button class="btn-text floorreset" data-removeex="${key}">Remove exercise</button>
+      </div>
+      ${!e.isTime && floorFor(e.id) > 0 ? `
+        <div class="floorline">
+          <div>
+            <span class="ellabel">Floor</span>
+            <span class="floorval">${num(floorFor(e.id))}${unitLabel()}</span>
+          </div>
+          <button class="btn-text floorreset" data-clearfloor="${e.id}">Reset</button>
+        </div>
+        <div class="helptext" style="border-top:none; padding-top:4px;">
+          Clearing it lets this lift start over from your next logged session —
+          the place to do that after an injury or a long break.
+        </div>` : ''}
+    </div>
+  `;
+
+  return `
+    <div class="planrow ${open?'open':''}" data-row="${key}">
+      <button class="planrow-head" data-exrow="${key}" aria-expanded="${open}">
+        <span class="pr-name">${e.name}</span>
+        <span class="pr-num">${exSummaryHTML(e)}<span class="chev">▶</span></span>
+      </button>
+      ${editHTML}
+    </div>
+  `;
+}
+
+function wizardStep4(){
+  const plan = wizardPlan();
+  const tpl = TEMPLATES.find(t=>t.id===wizard.templateId);
+  if(!wizard.exercises) wizard.exercises = {};
+  plan.sessions.forEach(s=>{
+    if(wizard.exercises[s.id]) return;
+    const src = tpl && tpl.sessions.find(x=>x.id===s.id);
+    // a custom session starts empty and gets filled by hand
+    wizard.exercises[s.id] = src
+      ? src.exercises.map(e=>({...e, id: s.id+'__'+slug(e.name)}))
+      : [];
+  });
+  return `
+    <div>
+      <span class="eyebrow">Step 4 of 5</span>
+      <h2 style="font-size:22px;">Your plan</h2>
+      <p class="muted" style="margin-top:8px;">
+        Every session, written out. These are proven starting numbers, so you can begin as-is —
+        tap any exercise to change it. Weights come next.
+      </p>
+      ${plan.sessions.map(s=>`
+        <div class="plan-session">
+          <h3>${s.name}</h3>
+          <div class="plan-list">
+            ${wizard.exercises[s.id].length
+              ? wizard.exercises[s.id].map((e,idx)=> planRowHTML(s.id, idx, e)).join('')
+              : '<p class="emptyplan">No exercises yet.</p>'}
+          </div>
+          <button class="btn btn-ghost addex" data-addex="${s.id}">+ Add exercise</button>
+        </div>
       `).join('')}
-      <div style="display:flex; gap:10px; margin-top:6px;">
+      <div class="stickybar" style="display:flex; gap:10px;">
         <button class="btn btn-ghost" id="backTo3">Back</button>
-        <button class="btn btn-primary" id="finishSetup">Start using Auxano</button>
+        <button class="btn btn-primary" id="toStep5">Continue</button>
       </div>
     </div>
   `;
+}
+
+/* Step 5 — the baseline week.
+   You train one week off-app, write down what you lifted, and enter it here.
+   Those numbers become each exercise's floor: the weight the app will never
+   suggest going under again. */
+function wizardStep5(){
+  const plan = wizardPlan();
+  const weighted = [];
+  plan.sessions.forEach(s=>{
+    (wizard.exercises[s.id]||[]).forEach(e=>{
+      if(!e.isTime) weighted.push({ session:s, e });
+    });
+  });
+  const filled = weighted.filter(x=> wizard.baselines[x.e.id] > 0).length;
+
+  return `
+    <div>
+      <span class="eyebrow">Step 5 of 5</span>
+      <h2 style="font-size:22px;">Your baseline</h2>
+      <p class="muted" style="margin-top:8px;">
+        Train one week on this routine without the app and write down your working weight
+        for each lift. Enter those here — they become your floor, and Auxano will never
+        suggest going under them again.
+      </p>
+      <div class="baseline-note">
+        <b>Haven't trained yet?</b> Leave anything blank and the app will set that
+        exercise's floor from the first session you log.
+      </div>
+
+      ${plan.sessions.map(s=>{
+        const rows = (wizard.exercises[s.id]||[]).filter(e=>!e.isTime);
+        if(!rows.length) return '';
+        return `
+          <div class="plan-session">
+            <h3>${s.name}</h3>
+            <div class="plan-list">
+              ${rows.map(e=>`
+                <div class="baserow">
+                  <div class="basename">
+                    ${e.name}
+                    <span class="basespec">${exSummary(e)}</span>
+                  </div>
+                  <div class="baseinput">
+                    <input type="number" inputmode="decimal" min="0" step="0.5"
+                           data-baseline="${e.id}" aria-label="Baseline weight for ${e.name}"
+                           placeholder="—" value="${wizard.baselines[e.id] > 0 ? wizard.baselines[e.id] : ''}">
+                    <span class="baseunit">${unitLabel()}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      }).join('')}
+
+      <div class="stickybar" style="display:flex; gap:10px;">
+        <button class="btn btn-ghost" id="backTo4">Back</button>
+        <button class="btn btn-primary" id="finishSetup">
+          ${filled ? 'Start training' : 'Skip for now'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function promptAddExercise(sessionId){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="aeTitle">
+      <p id="aeTitle" style="margin-bottom:12px;">Add an exercise</p>
+      <input type="text" id="aeName" maxlength="48" placeholder="e.g. Barbell Hip Thrust" autocomplete="off">
+      <p class="fchint" style="margin-top:9px;">
+        Starts at 3 sets of 8–12. You can change that on the next tap, and the
+        weight jump is guessed from the equipment.
+      </p>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn btn-ghost" id="aeCancel">Cancel</button>
+        <button class="btn btn-primary" id="aeGo">Add</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  const commit = ()=>{
+    const name = overlay.querySelector('#aeName').value.trim();
+    if(!name) return;
+    const taken = (wizard.exercises[sessionId]||[]).map(e=>e.id);
+    if(!wizard.exercises[sessionId]) wizard.exercises[sessionId] = [];
+    wizard.exercises[sessionId].push(defaultExercise(sessionId, name, taken));
+    close();
+    renderWizard();
+  };
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('#aeCancel').addEventListener('click', close);
+  overlay.querySelector('#aeGo').addEventListener('click', commit);
+  overlay.querySelector('#aeName').addEventListener('keydown', e=>{ if(e.key==='Enter') commit(); });
+  overlay.querySelector('#aeName').focus();
+}
+
+function adjustEx(sid, idx, field, delta){
+  const e = wizard.exercises[sid][idx];
+  const step = e.isTime ? 5 : 1;
+  if(field==='sets'){
+    e.sets = clamp(e.sets + delta, 1, 10);
+  } else if(field==='repMin'){
+    e.repMin = clamp(e.repMin + delta, step, e.repMax);
+  } else if(field==='repMax'){
+    e.repMax = clamp(e.repMax + delta, e.repMin, e.isTime ? 300 : 50);
+  } else if(field==='inc'){
+    // inc moves along the unit's plate-increment list, so delta is a list offset
+    let i = weightSteps().indexOf(e.inc);
+    if(i === -1){
+      i = weightSteps().reduce((best,w,wi)=>
+        Math.abs(w-e.inc) < Math.abs(weightSteps()[best]-e.inc) ? wi : best, 0);
+    }
+    e.inc = weightSteps()[clamp(i + delta, 0, weightSteps().length-1)];
+  }
+}
+
+// Repaint a single row in place — a full renderWizard() here would throw away scroll position.
+function repaintPlanRow(key){
+  const el = root.querySelector(`.planrow[data-row="${key}"]`);
+  if(!el) return null;
+  const [sid, idxStr] = key.split('|');
+  const idx = parseInt(idxStr, 10);
+  el.outerHTML = planRowHTML(sid, idx, wizard.exercises[sid][idx]);
+  return bindPlanRow(key);
+}
+
+function bindPlanRow(key){
+  const el = root.querySelector(`.planrow[data-row="${key}"]`);
+  if(!el) return null;
+  el.querySelector('[data-exrow]')?.addEventListener('click', ()=>{
+    const prev = wizard.openEx;
+    wizard.openEx = (prev === key) ? null : key;
+    if(prev && prev !== key) repaintPlanRow(prev);
+    const fresh = repaintPlanRow(key);
+    if(wizard.openEx && fresh){
+      const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+      fresh.scrollIntoView?.({block:'nearest', behavior: calm ? 'auto' : 'smooth'});
+    }
+  });
+  el.querySelectorAll('[data-adj]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const [sid, idxStr, field, deltaStr] = btn.dataset.adj.split('|');
+      adjustEx(sid, parseInt(idxStr,10), field, parseFloat(deltaStr));
+      repaintPlanRow(key);
+    });
+  });
+  el.querySelector('[data-clearfloor]')?.addEventListener('click', (ev)=>{
+    const exId = ev.currentTarget.dataset.clearfloor;
+    showConfirm(
+      `Reset this floor?<br><br>The app will stop holding you to ${num(floorFor(exId))}${unitLabel()} ` +
+      `and will set a new floor from your next logged session. Your history is kept.`,
+      'Reset floor',
+      async ()=>{
+        clearFloor(exId);
+        delete wizard.baselines[exId];
+        await saveState();
+        repaintPlanRow(key);
+      },
+      { danger:true }
+    );
+  });
+  return el;
 }
 
 function attachWizardHandlers(){
@@ -620,11 +1722,47 @@ function attachWizardHandlers(){
       });
       el.addEventListener('keydown', (ev)=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); el.click(); } });
     });
+    root.querySelectorAll('[data-unit]').forEach(b=>{
+      b.addEventListener('click', async ()=>{ await setUnit(b.dataset.unit); renderWizard(); });
+    });
     root.querySelector('#toStep2')?.addEventListener('click', ()=>{ wizard.step=2; renderWizard(); });
   }
   if(wizard.step===2){
     root.querySelectorAll('[data-tpl]').forEach(el=>{
-      el.addEventListener('click', ()=>{ wizard.templateId = el.dataset.tpl; wizard.dayMap={}; wizard.exercises=null; renderWizard(); });
+      el.addEventListener('click', ()=>{ wizard.templateId = el.dataset.tpl; wizard.dayMap={}; wizard.exercises=null; wizard.openEx=null; renderWizard(); });
+    });
+    // Custom routine: previously rendered but wired to nothing at all.
+    root.querySelector('#selectCustom')?.addEventListener('click', ()=>{
+      wizard.templateId = 'custom';
+      wizard.dayMap = {}; wizard.exercises = null; wizard.openEx = null;
+      if(!wizard.customSessions || !wizard.customSessions.length){
+        wizard.customSessions = [newCustomSession(0)];
+      }
+      renderWizard();
+    });
+    root.querySelector('#addSessionType')?.addEventListener('click', ()=>{
+      wizard.customSessions.push(newCustomSession(wizard.customSessions.length));
+      renderWizard();
+    });
+    root.querySelectorAll('[data-removesession]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const i = parseInt(b.dataset.removesession, 10);
+        const gone = wizard.customSessions[i];
+        wizard.customSessions.splice(i, 1);
+        if(gone && wizard.exercises) delete wizard.exercises[gone.id];
+        Object.keys(wizard.dayMap).forEach(k=>{
+          if(gone && wizard.dayMap[k] === gone.id) delete wizard.dayMap[k];
+        });
+        renderWizard();
+      });
+    });
+    root.querySelectorAll('[data-customname]').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        wizard.customSessions[parseInt(inp.dataset.customname,10)].name = inp.value;
+        // live-enable Continue without a re-render stealing focus mid-typing
+        const go = root.querySelector('#toStep3');
+        if(go) go.disabled = !wizard.customSessions.some(s=>s.name.trim());
+      });
     });
     root.querySelector('#backTo1')?.addEventListener('click', ()=>{ wizard.step=1; renderWizard(); });
     root.querySelector('#toStep3')?.addEventListener('click', ()=>{ wizard.step=3; renderWizard(); });
@@ -637,19 +1775,49 @@ function attachWizardHandlers(){
     root.querySelector('#toStep4')?.addEventListener('click', ()=>{ wizard.step=4; renderWizard(); });
   }
   if(wizard.step===4){
-    root.querySelectorAll('[data-ex]').forEach(el=>{
-      el.addEventListener('change', ()=>{
-        const [sid, idx, field] = el.dataset.ex.split('|');
-        wizard.exercises[sid][idx][field] = parseFloat(el.value) || 0;
+    root.querySelectorAll('.planrow[data-row]').forEach(el=> bindPlanRow(el.dataset.row));
+    root.querySelectorAll('[data-addex]').forEach(b=>{
+      b.addEventListener('click', ()=> promptAddExercise(b.dataset.addex));
+    });
+    root.querySelectorAll('[data-removeex]').forEach(b=>{
+      b.addEventListener('click', (ev)=>{
+        const [sid, idxStr] = ev.currentTarget.dataset.removeex.split('|');
+        wizard.exercises[sid].splice(parseInt(idxStr,10), 1);
+        wizard.openEx = null;
+        renderWizard();
       });
     });
     root.querySelector('#backTo3')?.addEventListener('click', ()=>{ wizard.step=3; renderWizard(); });
+    root.querySelector('#toStep5')?.addEventListener('click', ()=>{ wizard.step=5; renderWizard(); });
+  }
+  if(wizard.step===5){
+    root.querySelectorAll('[data-baseline]').forEach(el=>{
+      const commit = ()=>{
+        const v = parseFloat(el.value);
+        if(isFinite(v) && v > 0) wizard.baselines[el.dataset.baseline] = v;
+        else delete wizard.baselines[el.dataset.baseline];
+      };
+      el.addEventListener('input', commit);
+      el.addEventListener('change', commit);
+    });
+    root.querySelector('#backTo4')?.addEventListener('click', ()=>{ wizard.step=4; renderWizard(); });
     root.querySelector('#finishSetup')?.addEventListener('click', async ()=>{
-      state.setup = {
+      const plan = wizardPlan();
+      // Store the plan whole — ids, names and all — so it can never be shifted
+      // underneath you by a template change later.
+      state.setup = normalizeSetup({
         templateId: wizard.templateId,
+        routineName: plan.name,
+        sessions: plan.sessions,
         dayMap: wizard.dayMap,
         exercises: wizard.exercises,
-      };
+      });
+      // Baselines seed the floors. Ratchet semantics apply even here: editing setup
+      // later can raise a floor but never quietly drop one you've already earned.
+      Object.keys(wizard.baselines).forEach(exId=>{
+        const v = wizard.baselines[exId];
+        if(isFinite(v) && v > floorFor(exId)) state.floors[exId] = v;
+      });
       await saveState();
       render();
     });
@@ -658,7 +1826,7 @@ function attachWizardHandlers(){
 
 /* ============================= PLATE VISUAL ============================= */
 function platesForSide(weightPerSide){
-  const denoms = [20,15,10,5,2.5,1.25];
+  const denoms = unitDef().plates;
   let rem = Math.max(0, weightPerSide);
   const plates = [];
   for(const d of denoms){
@@ -673,7 +1841,7 @@ function plateHeight(d){
 function plateWidth(d){ return d>=15 ? 10 : 7; }
 
 function barbellSVG(totalWeight){
-  const barW = 20; // assume standard olympic bar
+  const barW = barWeight();
   const perSide = Math.max(0,(totalWeight - barW))/2;
   const plates = platesForSide(perSide);
   const sideHTML = plates.map(d=>`<div class="plate" style="height:${plateHeight(d)}px; width:${plateWidth(d)}px;"></div>`).join('');
@@ -683,137 +1851,391 @@ function barbellSVG(totalWeight){
       <div class="bar-rod"></div>
       <div class="plate-side right">${sideHTML}</div>
     </div>
-    <div class="loadlabel">${totalWeight>0 ? totalWeight.toFixed(2).replace(/\.00$/,'') + ' kg loaded' : 'bar only'}</div>
+    <div class="loadlabel">${totalWeight>0 ? num(totalWeight) + ' ' + unitLabel() + ' loaded' : 'bar only'}</div>
   `;
 }
 
 /* ============================= PROGRESSION LOGIC ============================= */
 function getHistory(exId){ return state.history[exId] || []; }
-function lastSession(exId){ const h=getHistory(exId); return h.length? h[h.length-1] : null; }
+// Warm-ups are stored but never judged — strip them before any progression maths.
+function workingSets(sets){
+  const w = (sets||[]).filter(s=> !s.warmup);
+  return w.length ? w : (sets||[]);
+}
+function lastSession(exId){
+  const h = getHistory(exId);
+  if(!h.length) return null;
+  const last = h[h.length-1];
+  return { ...last, sets: workingSets(last.sets) };
+}
+
+/* ---------- The ratchet ----------
+   Every exercise carries a floor: a working weight it must never drop below.
+   Your baseline week seeds it; a heavier completed session raises it. Nothing
+   lowers it. The floor governs what the app SUGGESTS — you can still log
+   whatever actually happened on the day. */
+function floorFor(exId){
+  const v = state.floors[exId];
+  return typeof v === 'number' && isFinite(v) ? v : 0;
+}
+
+// The heaviest weight you actually completed for at least your minimum reps.
+// A heavy partial or a missed set doesn't count as establishing a weight.
+function achievedWeight(exSpec, sets){
+  let best = 0;
+  (sets||[]).forEach(s=>{
+    if(s.reps >= exSpec.repMin && s.weight > best) best = s.weight;
+  });
+  return best;
+}
+
+// Ratchet: raise the floor if this session earned it, never lower it.
+function raiseFloor(exSpec, sets){
+  const earned = achievedWeight(exSpec, sets);
+  if(earned > floorFor(exSpec.id)){
+    state.floors[exSpec.id] = earned;
+    return true;
+  }
+  return false;
+}
+
+/* ---------- The way back down ----------
+   A ratchet with no release traps you after an injury or a layoff: every session
+   demands a weight you can't currently hit. The floor still never falls on its
+   own — but after repeatedly missing it, the app offers to step it down, and you
+   can always reset one by hand. */
+const DELOAD_TRIGGER = 2;     // consecutive sessions under the floor
+const DELOAD_FACTOR = 0.9;    // how far a deload drops it
+
+// How many of the most recent sessions for this exercise came in under the floor.
+function consecutiveMisses(exSpec){
+  const floor = floorFor(exSpec.id);
+  if(floor <= 0) return 0;
+  const hist = getHistory(exSpec.id);
+  let n = 0;
+  for(let i = hist.length - 1; i >= 0; i--){
+    const best = Math.max(0, ...workingSets(hist[i].sets).map(s=>s.weight));
+    if(best < floor) n++; else break;
+  }
+  return n;
+}
+function shouldOfferDeload(exSpec){
+  return !exSpec.isTime && consecutiveMisses(exSpec) >= DELOAD_TRIGGER;
+}
+function deloadTarget(exSpec){
+  const floor = floorFor(exSpec.id);
+  const stepped = roundToPlate(floor * DELOAD_FACTOR, unitKey());
+  return Math.max(0, Math.min(stepped, floor - (exSpec.inc || 0)));
+}
+// Explicit only — never called automatically.
+function applyDeload(exSpec){
+  const next = deloadTarget(exSpec);
+  state.floors[exSpec.id] = next;
+  return next;
+}
+function clearFloor(exId){ delete state.floors[exId]; }
+
+/* ---------- Strength over time ----------
+   Epley: a 5-rep set at 100 and a 3-rep set at 107.5 are near-identical efforts,
+   and comparing estimated one-rep maxes is what makes those two sessions
+   comparable at all. Used for PRs and for the trend line. */
+function e1rm(weight, reps){
+  const w = +weight || 0, r = +reps || 0;
+  if(w <= 0 || r <= 0) return 0;
+  return r === 1 ? w : w * (1 + r/30);
+}
+function bestE1RM(sets){ return Math.max(0, ...(sets||[]).map(s=> e1rm(s.weight, s.reps))); }
+function topWeightOf(sets){ return Math.max(0, ...(sets||[]).map(s=> +s.weight || 0)); }
+
+// Strongest session before `exceptDate`, so today can be compared against the past.
+function bestBefore(exId, exceptDate){
+  let best = 0;
+  getHistory(exId).forEach(h=>{
+    if(h.date === exceptDate) return;
+    best = Math.max(best, bestE1RM(workingSets(h.sets)));
+  });
+  return best;
+}
+function isPR(exId, sets, onDate){
+  const now = bestE1RM(sets);
+  return now > 0 && now > bestBefore(exId, onDate) + 0.01;
+}
+
+/* A sparkline of estimated 1RM per session. Inline SVG so it needs no library
+   and inherits the theme's colours. */
+function sparkline(points, w, h){
+  if(!points.length) return '';
+  const pad = 4;
+  const max = Math.max(...points), min = Math.min(...points);
+  const span = (max - min) || 1;
+  const stepX = points.length > 1 ? (w - pad*2) / (points.length - 1) : 0;
+  const xy = points.map((p,i)=>{
+    const x = pad + i*stepX;
+    const y = h - pad - ((p - min)/span) * (h - pad*2);
+    return [x, y];
+  });
+  if(points.length === 1){ xy.push([w - pad, xy[0][1]]); }
+  const line = xy.map(([x,y])=> `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${pad},${h-pad} ${line} ${(w-pad).toFixed(1)},${h-pad}`;
+  const last = xy[xy.length-1];
+  return `
+    <svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <polygon points="${area}" fill="var(--gold-wash)"></polygon>
+      <polyline points="${line}" fill="none" stroke="var(--gold)" stroke-width="1.8"
+                stroke-linejoin="round" stroke-linecap="round"></polyline>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3" fill="var(--gold-bright)"></circle>
+    </svg>`;
+}
 
 function suggestTarget(exSpec){
+  const floor = floorFor(exSpec.id);
   const last = lastSession(exSpec.id);
+
   if(!last || !last.sets.length){
-    return { weight: null, note: 'No previous data — log your starting point.' };
+    return floor > 0
+      ? { weight: floor, note: `Starting from your baseline of ${num(floor)}${unitLabel()}.`, atFloor:true }
+      : { weight: null, note: 'No previous data — log your starting point.' };
   }
+
   const topWeight = Math.max(...last.sets.map(s=>s.weight));
-  const allHitMax = last.sets.every(s=> exSpec.isTime ? s.reps>=exSpec.repMax : s.reps>=exSpec.repMax);
-  const allHitMin = last.sets.every(s=> s.reps>=exSpec.repMin);
+  const allHitMax = last.sets.every(s=> s.reps >= exSpec.repMax);
+  const allHitMin = last.sets.every(s=> s.reps >= exSpec.repMin);
+
+  let weight, note;
   if(allHitMax){
-    return { weight: +(topWeight + exSpec.inc).toFixed(2), note: `Last time you hit the top of your range — step up.` };
+    weight = +(topWeight + exSpec.inc).toFixed(2);
+    note = 'Last time you hit the top of your range — step up.';
+  } else if(allHitMin){
+    weight = topWeight;
+    note = 'Same weight — push for more reps in your range.';
+  } else {
+    weight = topWeight;
+    note = 'Same weight — focus on completing your rep range.';
   }
-  if(allHitMin){
-    return { weight: topWeight, note: `Same weight — push for more reps in your range.` };
+
+  // The ratchet: a bad day last week must not drag this week's target down.
+  if(floor > weight){
+    return { weight: floor, note: `Back to your floor of ${num(floor)}${unitLabel()}.`, atFloor:true };
   }
-  return { weight: topWeight, note: `Same weight — focus on completing your rep range.` };
+  return { weight, note, atFloor: weight === floor };
 }
 
 /* ============================= HOME ============================= */
+const ICON_TODAY = `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+  stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+  <rect x="3" y="4.5" width="18" height="16.5" rx="3.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>
+  <circle cx="12" cy="15.2" r="1.7" fill="currentColor" stroke="none"/></svg>`;
+const ICON_LOG = `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+  stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+  <path d="M4 6.5h16M4 12h16M4 17.5h10"/></svg>`;
+
+function tabbarHTML(active){
+  return `
+    <nav class="tabbar">
+      <button class="tab ${active==='today'?'on':''}" data-tab="today" ${active==='today'?'aria-current="page"':''}>
+        ${ICON_TODAY}<span class="tlabel">Today</span>
+      </button>
+      <button class="tab ${active==='log'?'on':''}" data-tab="log" ${active==='log'?'aria-current="page"':''}>
+        ${ICON_LOG}<span class="tlabel">Log</span>
+      </button>
+    </nav>
+  `;
+}
+function bindTabs(){
+  root.querySelectorAll('[data-tab]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if(b.dataset.tab === 'today') renderHome();
+      else renderHistory();
+    });
+  });
+}
+
+function weekStripHTML(){
+  return weekCells().map(c=>`
+    <div class="wday ${c.status} ${c.isToday?'today':''}">
+      <span class="wl">${c.label}</span>
+      <span class="wn">${c.dayNum}</span>
+    </div>
+  `).join('');
+}
+
 function renderHome(){
-  const now = new Date();
+  const now = nowDate();
   const tKey = todayKey();
-  const wkKey = weekdayKey(now);
-  const scheduledSessionId = state.setup.dayMap[wkKey];
-  const tpl = TEMPLATES.find(t=>t.id===state.setup.templateId);
-  const session = scheduledSessionId ? tpl.sessions.find(s=>s.id===scheduledSessionId) : null;
+  const sessionId = state.setup.dayMap[weekdayKey(now)];
+  const session = sessionId ? sessionById(sessionId) : null;
   const doneToday = hasLoggedDay(tKey);
+  const week = weekCells();
+  const weekDone = week.filter(c=>c.sessionId && c.status==='done').length;
+  const weekTotal = week.filter(c=>c.sessionId).length;
 
-  // week strip: order mon..sun, mark today
-  const sorted = [...DAY_ORDER];
-  const weekStripHTML = sorted.map(dk=>{
-    const dObj = DAYS.find(d=>d.k===dk);
-    const isTraining = !!state.setup.dayMap[dk];
-    const isToday = dk===wkKey;
-    // figure completion for this date within current week (approx by day-of-week only, best-effort)
-    let cls = 'wdot';
-    if(isTraining) cls += ' scheduled';
-    if(isToday) cls += ' today';
-    if(isToday && doneToday) cls += ' done';
-    return `<div class="${cls}">${dObj.label}</div>`;
-  }).join('');
+  // A session logged on an unscheduled day still happened — don't call it a rest day.
+  const loggedMeta = (doneToday && state.completions[tKey] && state.completions[tKey]._meta) || null;
+  const extraId = loggedMeta && loggedMeta.sessionId;
+  const canReviewExtra = !!(extraId && state.setup.exercises[extraId]);
+  const reviewId = session ? session.id : (canReviewExtra ? extraId : null);
 
-  let mainHTML = '';
-  if(!session){
-    mainHTML = `
-      <div class="card today-card">
+  let heroHTML;
+  if(!session && doneToday){
+    heroHTML = `
+      <div class="hero complete">
+        <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})} · Complete</span>
+        <h2 class="heroname">${loggedMeta ? loggedMeta.sessionName : 'Workout'}</h2>
+        <p class="herometa">Logged outside your schedule</p>
+        ${canReviewExtra ? `<button class="btn btn-ghost" id="reopenSession">Review today's log</button>` : ''}
+      </div>`;
+  } else if(!session){
+    // Next training day, so a rest day still tells you what's coming.
+    const upcoming = [1,2,3,4,5,6,7].map(n=>addDays(now,n))
+      .find(d => state.setup.dayMap[weekdayKey(d)]);
+    const nextName = upcoming
+      ? sessionName(state.setup.dayMap[weekdayKey(upcoming)])
+      : null;
+    heroHTML = `
+      <div class="hero rest">
         <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}</span>
-        <h2 class="sesname">Rest day</h2>
-        <p class="sesmeta">No session scheduled today. Recovery is part of the program.</p>
-      </div>
-    `;
-  } else if(doneToday){
-    mainHTML = `
-      <div class="card today-card">
-        <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}</span>
-        <h2 class="sesname">${session.name} — done</h2>
-        <p class="sesmeta">Logged for today. Nice work.</p>
-        <button class="btn btn-ghost" id="reopenSession">Review / edit today's log</button>
-      </div>
-    `;
+        <h2 class="heroname">Rest day</h2>
+        <p class="herometa">Recovery is part of the program.</p>
+        ${nextName ? `<div class="nextup">Next: <b>${nextName}</b> on ${
+          upcoming.toLocaleDateString(undefined,{weekday:'long'})}</div>` : ''}
+      </div>`;
   } else {
-    mainHTML = `
-      <div class="card today-card">
-        <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}</span>
-        <h2 class="sesname">${session.name}</h2>
-        <p class="sesmeta">${state.setup.exercises[session.id].length} exercises scheduled</p>
-        <button class="btn btn-primary" id="startSession">Start workout</button>
-      </div>
-    `;
+    const exs = state.setup.exercises[session.id];
+    const totalSets = exs.reduce((n,e)=> n + e.sets, 0);
+    // Showing the actual lifts means you know what you're walking into without tapping.
+    const preview = exs.map(e=>`
+      <button class="exline tappable" data-exprog="${e.id}">
+        <span class="exlname">${e.name}</span>
+        <span class="exspec">${exSpecCaps(e)}</span>
+      </button>`).join('');
+    heroHTML = `
+      <div class="hero ${doneToday?'complete':''}">
+        <span class="eyebrow">${now.toLocaleDateString(undefined,{weekday:'long'})}${doneToday?' · Complete':''}</span>
+        <h2 class="heroname">${session.name}</h2>
+        <p class="herometa">${exs.length} exercises · ${totalSets} sets</p>
+        <div class="exlist">${preview}</div>
+        ${doneToday
+          ? `<button class="btn btn-ghost" id="reopenSession">Review today's log</button>`
+          : `<button class="btn btn-primary logbtn-home" id="startSession">Start workout</button>`}
+      </div>`;
   }
 
   root.innerHTML = `
     <header class="top">
       <div class="brand"><span class="bar"></span>AUXANO</div>
-      <div style="display:flex; gap:14px;">
-        <button class="reset" id="historyBtn">Training log</button>
-        <button class="reset" id="resetBtn">Edit setup</button>
-      </div>
+      <button class="iconbtn" id="resetBtn" aria-label="Edit routine">⚙</button>
     </header>
     <main>
-      ${mainHTML}
+      ${storageIsDurable() ? '' : `
+        <div class="warnbar">
+          <b>This browser isn't saving your data.</b> Your routine and logs will disappear when you
+          close this tab — private browsing usually causes this. Try a normal window.
+        </div>`}
+      ${heroHTML}
+
       <div class="card">
-        <span class="eyebrow">This week</span>
-        <div class="weekstrip">${weekStripHTML}</div>
+        <div class="cardhead">
+          <span class="eyebrow" style="margin:0;">This week</span>
+          <span class="cardmeta">${weekDone} of ${weekTotal} done</span>
+        </div>
+        <div class="weekstrip">${weekStripHTML()}</div>
       </div>
-      <div class="card">
-        <span class="eyebrow">Routine</span>
-        <div style="font-family:'Oswald',sans-serif; font-size:16px; margin-top:4px;">${tpl.name}</div>
-        <p class="muted" style="margin-top:4px;">${tpl.desc}</p>
-      </div>
+
+      <button class="routinerow" id="resetBtn2">
+        <div>
+          <div class="rname">${routineName()}</div>
+          <div class="rmeta">${weekTotal} day${weekTotal===1?'':'s'} a week · ${planSessions().length} session types</div>
+        </div>
+        <span class="chev-r">›</span>
+      </button>
     </main>
+    ${tabbarHTML('today')}
   `;
 
+  root.querySelectorAll('[data-exprog]').forEach(b=>
+    b.addEventListener('click', ()=> renderExercise(b.dataset.exprog, 'home')));
   root.querySelector('#resetBtn')?.addEventListener('click', enterEditSetup);
-  root.querySelector('#historyBtn')?.addEventListener('click', renderHistory);
+  root.querySelector('#resetBtn2')?.addEventListener('click', enterEditSetup);
   root.querySelector('#startSession')?.addEventListener('click', ()=> renderSession(session.id, false));
-  root.querySelector('#reopenSession')?.addEventListener('click', ()=> renderSession(session.id, true));
+  root.querySelector('#reopenSession')?.addEventListener('click', ()=>{ if(reviewId) renderSession(reviewId, true); });
+  bindTabs();
 }
 
 /* ============================= WORKOUT SESSION — GYM FOCUS MODE ============================= */
 // One set, one screen. No typing required — big +/- steppers. Auto-advances through
 // every set of every exercise in order, then shows a finish screen.
-let sessionDraft = {};   // exId -> [{weight,reps,done}]
-let focus = { exercises:[], flat:[], pos:0, sessionName:'', sessionId:'' };
+let sessionDraft = {};   // exId -> [{weight,reps,done,touched}]
+let focus = { exercises:[], flat:[], pos:0, sessionName:'', sessionId:'', active:false, restEnd:null };
 // flat = [{exIdx, setIdx}] linear walk order through all sets, for simple prev/next + dot progress
 
-function renderSession(sessionId, isReview){
-  const tpl = TEMPLATES.find(t=>t.id===state.setup.templateId);
-  const session = tpl.sessions.find(s=>s.id===sessionId);
-  const exercises = state.setup.exercises[sessionId];
-  const tKey = todayKey();
+function num(n){ return String(+(+n).toFixed(2)); }   // 62.50 -> "62.5", 60.00 -> "60"
+function buzz(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+
+/* Keep the screen on mid-workout — a phone locking between sets is the single most
+   annoying thing a gym logger can do. Silently unavailable on unsupported browsers. */
+let wakeLock = null;
+async function keepAwake(on){
+  try{
+    if(on){
+      if(!wakeLock && navigator.wakeLock){
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+      }
+    } else if(wakeLock){
+      const w = wakeLock; wakeLock = null; await w.release();
+    }
+  }catch(e){ /* unsupported, or denied in the background — non-fatal */ }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && focus.active) keepAwake(true);
+});
+
+/* The whole point: the numbers on screen should already be right, so logging a set
+   is one tap. Priority — carry forward what you just lifted this session, else the
+   progression target, with reps aimed where double progression expects them. */
+function ensureDefaults(exSpec, setIdx){
+  const rows = sessionDraft[exSpec.id];
+  const row = rows[setIdx];
+  if(row.done || row.touched) return row;
+
+  for(let i=setIdx-1; i>=0; i--){
+    if(rows[i].done){ row.weight = rows[i].weight; row.reps = rows[i].reps; return row; }
+  }
+
+  const target = suggestTarget(exSpec);
+  const last = lastSession(exSpec.id);
+  const lastSet = last && last.sets[setIdx] ? last.sets[setIdx] : null;
+  row.weight = target.weight !== null ? target.weight : (lastSet ? lastSet.weight : 0);
+  if(lastSet && target.weight !== null && target.weight > lastSet.weight){
+    row.reps = exSpec.repMin;                                  // weight went up — range restarts
+  } else if(lastSet){
+    row.reps = clamp(lastSet.reps, exSpec.repMin, exSpec.repMax);
+  } else {
+    row.reps = exSpec.repMin;
+  }
+  return row;
+}
+
+function renderSession(sessionId, isReview, forDate){
+  const session = sessionById(sessionId);
+  if(!session) return renderHome();
+  // A copy, so a mid-session swap doesn't rewrite your saved routine.
+  const exercises = exercisesFor(sessionId).slice();
+  const tKey = forDate || todayKey();
 
   sessionDraft = {};
   const flat = [];
   exercises.forEach((exSpec, exIdx)=>{
-    const target = suggestTarget(exSpec);
     let existing = null;
     if(isReview && state.completions[tKey] && state.completions[tKey][exSpec.id]){
       existing = state.completions[tKey][exSpec.id].sets;
     }
     const rows = [];
     for(let i=0;i<exSpec.sets;i++){
-      if(existing && existing[i]){ rows.push({...existing[i], done:true}); }
-      else { rows.push({ weight: target.weight!==null ? target.weight : 0, reps: exSpec.repMin, done:false }); }
+      if(existing && existing[i]){ rows.push({...existing[i], done:true, touched:true}); }
+      // left null on purpose — filled by ensureDefaults() at paint time so each set
+      // can inherit whatever you actually lifted on the set before it
+      else { rows.push({ weight:null, reps:null, done:false, touched:false, warmup:false }); }
       flat.push({exIdx, setIdx:i});
     }
     sessionDraft[exSpec.id] = rows;
@@ -829,8 +2251,106 @@ function renderSession(sessionId, isReview){
     startPos = firstUndone === -1 ? 0 : firstUndone;
   }
 
-  focus = { exercises, flat, pos: startPos, sessionName: session.name, sessionId };
+  focus = { exercises, flat, pos: startPos, sessionName: session.name, sessionId,
+            date: tKey, active:true, restEnd:null, restLen:0, restDinged:false };
+  keepAwake(true);
   paintFocus();
+}
+
+/* ---------- Rest timer ---------- */
+// Rest length is inferred from the rep range so there is nothing to configure.
+// Keyed off repMin — the heavy end of the range is what sets the load, and the
+// load is what dictates recovery. A 6-8 squat is a strength set; an 8-12 curl isn't.
+function defaultRest(exSpec){
+  if(exSpec.isTime) return 60;
+  if(exSpec.repMin <= 5) return 180;
+  if(exSpec.repMin <= 8) return 150;
+  if(exSpec.repMin <= 12) return 90;
+  return 60;
+}
+/* If you've switched apps mid-rest the vibration is easy to miss, so ask the OS
+   to tell you. Permission is requested on the first rest, never on load, and the
+   whole thing is optional — the countdown works regardless. */
+function notifyRestOver(){
+  try{
+    if(typeof Notification === 'undefined') return;
+    if(document.visibilityState === 'visible') return;      // you're looking at it
+    if(Notification.permission !== 'granted') return;
+    const { exSpec } = currentCell();
+    new Notification('Rest over', {
+      body: exSpec ? `Next: ${exSpec.name}` : 'Back to it.',
+      tag: 'auxano-rest',
+      silent: false,
+    });
+  }catch(e){ /* unsupported or blocked — the on-screen timer still works */ }
+}
+function askRestNotifications(){
+  try{
+    if(typeof Notification === 'undefined') return;
+    if(Notification.permission === 'default') Notification.requestPermission();
+  }catch(e){}
+}
+
+let restTimer = null;
+function startRest(sec){
+  askRestNotifications();
+  focus.restLen = sec;
+  focus.restEnd = Date.now() + sec*1000;
+  focus.restDinged = false;
+  if(!restTimer) restTimer = setInterval(tickRest, 250);
+}
+function stopRest(){
+  focus.restEnd = null;
+  if(restTimer){ clearInterval(restTimer); restTimer = null; }
+  root.querySelector('#restBand')?.remove();
+}
+function restRemaining(){
+  return focus.restEnd ? Math.max(0, Math.ceil((focus.restEnd - Date.now())/1000)) : 0;
+}
+function fmtClock(s){ return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+function tickRest(){
+  const band = root.querySelector('#restBand');
+  if(!band) return;                       // not on a set screen right now
+  const left = restRemaining();
+  const t = band.querySelector('#restTime');
+  const bar = band.querySelector('#restBar');
+  if(left > 0){
+    if(t) t.textContent = fmtClock(left);
+    if(bar) bar.style.width = (100 * (1 - left/focus.restLen)) + '%';
+  } else if(!focus.restDinged){
+    focus.restDinged = true;
+    buzz([50,80,50]);
+    notifyRestOver();
+    band.classList.add('ready');
+    if(t) t.textContent = 'GO';
+    if(bar) bar.style.width = '100%';
+    const lbl = band.querySelector('#restLabel');
+    if(lbl) lbl.textContent = 'Rested';
+    // Nothing left to count — stop waking the CPU 4x a second. The band stays
+    // on screen reading GO until the next set is logged.
+    clearInterval(restTimer); restTimer = null;
+  }
+}
+function restBandHTML(){
+  if(!focus.restEnd) return '';
+  const left = restRemaining();
+  const ready = left <= 0;
+  const pct = ready ? 100 : 100 * (1 - left/focus.restLen);
+  return `
+    <div class="restband ${ready?'ready':''}" id="restBand">
+      <div class="restrow">
+        <div>
+          <div class="restlabel" id="restLabel">${ready ? 'Rested' : 'Rest'}</div>
+          <div class="resttime" id="restTime">${ready ? 'GO' : fmtClock(left)}</div>
+        </div>
+        <div class="restacts">
+          <button id="rest30">+30s</button>
+          <button id="restSkip">Skip</button>
+        </div>
+      </div>
+      <div class="restbar"><i id="restBar" style="width:${pct}%"></i></div>
+    </div>
+  `;
 }
 
 function currentCell(){
@@ -840,47 +2360,80 @@ function currentCell(){
   return { f, exSpec, row };
 }
 
+// What the Log button is about to record, in words: "60kg × 8"
+function setLabel(exSpec, row){
+  const w = parseFloat(row.weight)||0;
+  const r = parseFloat(row.reps)||0;
+  const rr = exSpec.isTime ? r+'s' : r;
+  return w > 0 ? `${num(w)}${unitLabel()} × ${rr}` : (exSpec.isTime ? `${rr}` : `${rr} reps`);
+}
+/* The floor, shown where you're about to act on it. Going under is allowed —
+   it just says so, and the finish screen will ask what happened. */
+function floorNoteHTML(exSpec, row){
+  const floor = floorFor(exSpec.id);
+  if(exSpec.isTime || floor <= 0) return '';
+  const w = parseFloat(row.weight) || 0;
+  if(w < floor) return `<span class="under">Under your floor of ${num(floor)}${unitLabel()}</span>`;
+  if(w === floor) return `<span class="at">At your floor · ${num(floor)}${unitLabel()}</span>`;
+  return `<span class="above">Floor ${num(floor)}${unitLabel()} · +${num(w - floor)}${unitLabel()}</span>`;
+}
+
+function logBtnLabel(exSpec, row, isLast){
+  if(row.done) return `✓ ${setLabel(exSpec,row)} — ${isLast ? 'Finish' : 'Next'}`;
+  return `${row.warmup ? 'Log warm-up' : 'Log'} ${setLabel(exSpec, row)}`;
+}
+function doneCount(){
+  return focus.exercises.reduce((n,e)=> n + sessionDraft[e.id].filter(r=>r.done).length, 0);
+}
+
 function paintFocus(){
-  const { f, exSpec, row } = currentCell();
+  const { f, exSpec } = currentCell();
+  const row = ensureDefaults(exSpec, f.setIdx);
   const last = lastSession(exSpec.id);
-  const target = suggestTarget(exSpec);
   const lastSetOfSameIndex = last && last.sets[f.setIdx] ? last.sets[f.setIdx] : null;
   const unit = exSpec.isTime ? 'sec' : 'reps';
+  const isLast = focus.pos >= focus.flat.length-1;
 
   const prevText = lastSetOfSameIndex
-    ? `Last time, set ${f.setIdx+1}: ${lastSetOfSameIndex.weight}kg × ${lastSetOfSameIndex.reps}${exSpec.isTime?'s':''}`
-    : (last ? `Last time: ${last.sets.map(s=>`${s.weight}×${s.reps}`).join(', ')}` : 'No previous data logged yet');
+    ? `Last time, set ${f.setIdx+1}: ${num(lastSetOfSameIndex.weight)}${unitLabel()} × ${lastSetOfSameIndex.reps}${exSpec.isTime?'s':''}`
+    : (last ? `Last time: ${last.sets.map(s=>`${num(s.weight)}×${s.reps}`).join(', ')}` : 'First time logging this — anything you enter sets your baseline');
 
-  const targetText = target.weight!==null
-    ? `Target ${target.weight}kg × ${exSpec.repMin}-${exSpec.repMax}${exSpec.isTime?'s':''}`
-    : target.note;
+  const done = doneCount();
+  const total = focus.flat.length;
 
-  const dotsHTML = focus.exercises.map((e,idx)=>{
-    const allDone = sessionDraft[e.id].every(r=>r.done);
-    const cls = idx===f.exIdx ? 'current' : (allDone ? 'done' : '');
-    return `<div class="pd ${cls}"></div>`;
+  const setDots = sessionDraft[exSpec.id].map((r,i)=>{
+    const cls = i===f.setIdx ? 'current' : (r.done ? 'done' : '');
+    return `<i class="${cls}"></i>`;
   }).join('');
 
   root.innerHTML = `
     <div class="focus-screen">
       <div class="focus-top">
         <button class="exit-btn" id="exitFocus" aria-label="Exit workout">✕</button>
-        <div class="progress-dots">${dotsHTML}</div>
-        <div class="spacer"></div>
+        <div class="focus-progress" role="progressbar" aria-valuenow="${done}" aria-valuemin="0" aria-valuemax="${total}">
+          <i style="width:${total ? (100*done/total) : 0}%"></i>
+        </div>
+        <div class="focus-count">${done}/${total}</div>
       </div>
 
       <div class="focus-body">
+        ${focus.date && focus.date !== todayKey() ? `
+          <div class="pastbanner">Logging for ${
+            new Date(focus.date+'T00:00:00').toLocaleDateString(undefined,
+              {weekday:'long', day:'numeric', month:'short'})}</div>` : ''}
         <div class="focus-exname">${exSpec.name}</div>
-        <div class="focus-setlabel">Set ${f.setIdx+1} of ${exSpec.sets}</div>
+        <div class="setdots" aria-label="Set ${f.setIdx+1} of ${exSpec.sets}">${setDots}</div>
+        <div class="focus-setlabel">Set ${f.setIdx+1} of ${exSpec.sets} · exercise ${f.exIdx+1} of ${focus.exercises.length}</div>
+        ${restBandHTML()}
         <div class="focus-prev">${prevText}</div>
-        <div class="focus-target">${targetText}</div>
+        <div class="floornote" id="floorNote">${floorNoteHTML(exSpec, row)}</div>
 
         <div class="stepper-block">
           <div class="stepper-row">
             <button class="stepbtn" id="wMinus" aria-label="Decrease weight">–</button>
             <div class="bignum-wrap">
-              <input class="bignum" type="number" inputmode="decimal" id="wInput" value="${row.weight}">
-              <div class="bignum-unit">kg</div>
+              <input class="bignum" type="number" inputmode="decimal" id="wInput" aria-label="Weight in ${unitLabel()}" value="${row.weight}">
+              <div class="bignum-unit">${unitLabel()}</div>
             </div>
             <button class="stepbtn" id="wPlus" aria-label="Increase weight">+</button>
           </div>
@@ -888,22 +2441,29 @@ function paintFocus(){
           <div class="stepper-row">
             <button class="stepbtn" id="rMinus" aria-label="Decrease ${unit}">–</button>
             <div class="bignum-wrap">
-              <input class="bignum" type="number" inputmode="numeric" id="rInput" value="${row.reps}">
+              <input class="bignum" type="number" inputmode="numeric" id="rInput" aria-label="${unit}" value="${row.reps}">
               <div class="bignum-unit">${unit}</div>
             </div>
             <button class="stepbtn" id="rPlus" aria-label="Increase ${unit}">+</button>
           </div>
         </div>
 
-        ${!exSpec.isTime ? `<div class="focus-bb">${barbellSVG(parseFloat(row.weight)||0)}</div>` : ''}
+        ${usesBar(exSpec) ? `<div class="focus-bb">${barbellSVG(parseFloat(row.weight)||0)}</div>` : ''}
       </div>
 
       <div class="focus-actions">
-        <button class="btn logbtn ${row.done?'done-state':''}" id="logSet">${row.done ? 'Set logged ✓ — Next' : 'Log set'}</button>
+        <button class="btn logbtn ${row.done?'done-state':''}" id="logSet">${logBtnLabel(exSpec,row,isLast)}</button>
         <div class="focus-links">
           <button id="prevSet" ${focus.pos===0?'disabled':''}>‹ Back</button>
-          <button id="exitFocus2">End workout</button>
+          ${row.done ? '<button id="undoSet" class="undo-link">Undo</button>'
+                     : `<button id="warmToggle" class="warm-link ${row.warmup?'on':''}"
+                          aria-pressed="${!!row.warmup}">${row.warmup?'✓ Warm-up':'Warm-up'}</button>`}
           <button id="skipSet">Skip ›</button>
+        </div>
+        <div class="focus-end">
+          <button id="swapEx">Swap exercise</button>
+          <span class="enddot">·</span>
+          <button id="exitFocus2">End workout</button>
         </div>
       </div>
     </div>
@@ -915,27 +2475,81 @@ function stepWeight(exSpec, delta, row){
   const inc = exSpec.inc && exSpec.inc>0 ? exSpec.inc : 1.25;
   row.weight = Math.max(0, +((parseFloat(row.weight)||0) + delta*inc).toFixed(2));
 }
-function stepReps(delta, row){
-  row.reps = Math.max(0, (parseInt(row.reps)||0) + delta);
+function stepReps(exSpec, delta, row){
+  const step = exSpec.isTime ? 5 : 1;
+  row.reps = Math.max(0, (parseInt(row.reps)||0) + delta*step);
+}
+
+/* Tap to nudge, press and hold to run — going 20kg -> 100kg should not mean
+   64 taps or opening a keyboard with chalky hands. */
+function bindStepper(btn, fn){
+  if(!btn) return;
+  let delay = null, rep = null, didRepeat = false;
+  const stop = ()=>{ clearTimeout(delay); clearInterval(rep); delay = rep = null; };
+  btn.addEventListener('click', ()=>{
+    if(didRepeat){ didRepeat = false; return; }   // hold already applied the change
+    fn();
+  });
+  btn.addEventListener('pointerdown', ()=>{
+    stop();
+    delay = setTimeout(()=>{
+      let n = 0;
+      rep = setInterval(()=>{
+        didRepeat = true; fn();
+        if(++n === 6){ clearInterval(rep); rep = setInterval(fn, 55); }   // accelerate
+      }, 110);
+    }, 450);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=> btn.addEventListener(ev, stop));
 }
 
 function attachFocusHandlers(exSpec, row){
+  const isLast = focus.pos >= focus.flat.length-1;
+  const edit = fn => ()=>{
+    fn();
+    row.touched = true;
+    if(row.done){ row.done = false; paintFocus(); return; }  // changing it means re-logging it
+    refreshLive(exSpec, row);
+  };
+
   root.querySelector('#exitFocus')?.addEventListener('click', confirmExitFocus);
   root.querySelector('#exitFocus2')?.addEventListener('click', confirmExitFocus);
+  root.querySelector('#swapEx')?.addEventListener('click', promptSwap);
 
-  root.querySelector('#wMinus')?.addEventListener('click', ()=>{ stepWeight(exSpec,-1,row); refreshFocusNumbers(exSpec,row); });
-  root.querySelector('#wPlus')?.addEventListener('click', ()=>{ stepWeight(exSpec,1,row); refreshFocusNumbers(exSpec,row); });
-  root.querySelector('#rMinus')?.addEventListener('click', ()=>{ stepReps(-1,row); refreshFocusNumbers(exSpec,row); });
-  root.querySelector('#rPlus')?.addEventListener('click', ()=>{ stepReps(1,row); refreshFocusNumbers(exSpec,row); });
+  bindStepper(root.querySelector('#wMinus'), edit(()=> stepWeight(exSpec,-1,row)));
+  bindStepper(root.querySelector('#wPlus'),  edit(()=> stepWeight(exSpec, 1,row)));
+  bindStepper(root.querySelector('#rMinus'), edit(()=> stepReps(exSpec,-1,row)));
+  bindStepper(root.querySelector('#rPlus'),  edit(()=> stepReps(exSpec, 1,row)));
 
-  root.querySelector('#wInput')?.addEventListener('input', (e)=>{ row.weight = e.target.value; updateBarbellOnly(exSpec,row); });
-  root.querySelector('#rInput')?.addEventListener('input', (e)=>{ row.reps = e.target.value; });
+  root.querySelector('#wInput')?.addEventListener('input', (e)=>{ row.weight = e.target.value; row.touched = true; refreshLive(exSpec,row); });
+  root.querySelector('#rInput')?.addEventListener('input', (e)=>{ row.reps = e.target.value; row.touched = true; refreshLive(exSpec,row); });
+
+  root.querySelector('#rest30')?.addEventListener('click', ()=>{
+    focus.restEnd = Math.max(Date.now(), focus.restEnd||Date.now()) + 30000;
+    focus.restLen += 30; focus.restDinged = false;
+    root.querySelector('#restBand')?.classList.remove('ready');
+    if(!restTimer) restTimer = setInterval(tickRest, 250);
+    tickRest();
+  });
+  root.querySelector('#restSkip')?.addEventListener('click', stopRest);
 
   root.querySelector('#logSet')?.addEventListener('click', ()=>{
+    if(row.done){ advance(); return; }              // already logged — this is just "Next"
     row.weight = parseFloat(row.weight)||0;
     row.reps = parseFloat(row.reps)||0;
     row.done = true;
+    buzz(18);
+    if(!isLast) startRest(defaultRest(exSpec));
     advance();
+  });
+  root.querySelector('#warmToggle')?.addEventListener('click', ()=>{
+    row.warmup = !row.warmup;
+    paintFocus();
+  });
+  root.querySelector('#undoSet')?.addEventListener('click', ()=>{
+    row.done = false; row.touched = true;
+    stopRest();
+    paintFocus();
   });
   root.querySelector('#skipSet')?.addEventListener('click', advance);
   root.querySelector('#prevSet')?.addEventListener('click', ()=>{
@@ -943,15 +2557,21 @@ function attachFocusHandlers(exSpec, row){
   });
 }
 
-function refreshFocusNumbers(exSpec, row){
+// Update only what changed — repainting the whole screen would kill the rest timer
+// mid-tick and drop keyboard focus while you're typing a weight.
+function refreshLive(exSpec, row){
   const wInput = root.querySelector('#wInput');
   const rInput = root.querySelector('#rInput');
-  if(wInput) wInput.value = row.weight;
-  if(rInput) rInput.value = row.reps;
+  if(wInput && wInput !== document.activeElement) wInput.value = row.weight;
+  if(rInput && rInput !== document.activeElement) rInput.value = row.reps;
+  const btn = root.querySelector('#logSet');
+  if(btn) btn.textContent = logBtnLabel(exSpec, row, focus.pos >= focus.flat.length-1);
+  const fn = root.querySelector('#floorNote');
+  if(fn) fn.innerHTML = floorNoteHTML(exSpec, row);
   updateBarbellOnly(exSpec,row);
 }
 function updateBarbellOnly(exSpec, row){
-  if(exSpec.isTime) return;
+  if(!usesBar(exSpec)) return;   // plate math is meaningless on a cable stack
   const bbWrap = root.querySelector('.focus-bb');
   if(bbWrap) bbWrap.innerHTML = barbellSVG(parseFloat(row.weight)||0);
 }
@@ -970,82 +2590,497 @@ function confirmExitFocus(){
 }
 
 async function saveFocusSession(early){
-  const tKey = todayKey();
+  focus.active = false;
+  stopRest();
+  keepAwake(false);
+  const tKey = focus.date || todayKey();   // may be a past day being backfilled
+  const prevMeta = (state.completions[tKey] && state.completions[tKey]._meta) || null;
   if(!state.completions[tKey]) state.completions[tKey] = {};
-  state.completions[tKey]._meta = { sessionId: focus.sessionId, sessionName: focus.sessionName };
+  state.completions[tKey]._meta = {
+    sessionId: focus.sessionId,
+    sessionName: focus.sessionName,
+    // preserve any note already written for today when re-saving an edited session
+    note: prevMeta && prevMeta.note ? prevMeta.note : '',
+    reason: prevMeta && prevMeta.reason ? prevMeta.reason : '',
+  };
+
+  const under = [];        // exercises logged below their floor
+  const raised = [];       // exercises whose floor the ratchet just moved up
+  const prs = [];          // exercises that beat their best-ever estimated 1RM
+
   focus.exercises.forEach(exSpec=>{
     const rows = sessionDraft[exSpec.id].filter(r=> r.done);
-    if(rows.length){
-      const cleanSets = rows.map(r=>({weight:parseFloat(r.weight)||0, reps:parseFloat(r.reps)||0}));
-      if(!state.history[exSpec.id]) state.history[exSpec.id] = [];
-      state.history[exSpec.id].push({ date: tKey, sets: cleanSets });
-      state.completions[tKey][exSpec.id] = { name: exSpec.name, isTime: exSpec.isTime, sets: cleanSets };
+    if(!rows.length) return;
+    const cleanSets = rows.map(r=>({
+      weight: parseFloat(r.weight)||0,
+      reps: parseFloat(r.reps)||0,
+      ...(r.warmup ? { warmup:true } : {}),
+    }));
+    // Ramp-up sets are recorded but excluded from every judgement: they must not
+    // set floors, break PRs, or drag a "below your floor" warning.
+    const working = cleanSets.filter(s=> !s.warmup);
+
+    const floorBefore = floorFor(exSpec.id);
+    if(!exSpec.isTime && floorBefore > 0 && working.length && working.some(s=> s.weight < floorBefore)){
+      under.push({ name: exSpec.name, floor: floorBefore,
+                   low: Math.min(...working.map(s=>s.weight)) });
     }
+
+    // Judge the PR against everything except today, so re-saving an edit can't
+    // compare the session against itself and lose the badge.
+    if(!exSpec.isTime && working.length && isPR(exSpec.id, working, tKey)){
+      prs.push({ id: exSpec.id, name: exSpec.name, e1rm: bestE1RM(working) });
+    }
+
+    if(!state.history[exSpec.id]) state.history[exSpec.id] = [];
+    const hist = state.history[exSpec.id];
+    // Upsert by date. Pushing blindly meant re-opening "Review today's log" filed a
+    // second entry for the same day, which then skewed every future suggestion.
+    const existingIdx = hist.findIndex(h=> h.date === tKey);
+    if(existingIdx > -1) hist[existingIdx] = { date: tKey, sets: cleanSets };
+    else hist.push({ date: tKey, sets: cleanSets });
+
+    if(working.length && raiseFloor(exSpec, working)) raised.push(exSpec.name);
+    state.completions[tKey][exSpec.id] = { name: exSpec.name, isTime: exSpec.isTime, sets: cleanSets };
   });
+
+  // Nothing logged at all — don't leave an empty {_meta} shell behind.
+  if(!Object.keys(state.completions[tKey]).some(k=> k !== '_meta')){
+    delete state.completions[tKey];
+  }
+
+  // Repeated misses on the same lift: offer a way down, once the history is written.
+  focus.stalled = focus.exercises
+    .filter(e=> shouldOfferDeload(e))
+    .map(e=>({ id:e.id, name:e.name, floor:floorFor(e.id), to:deloadTarget(e),
+               misses:consecutiveMisses(e) }));
+
+  if(state.completions[tKey]) state.completions[tKey]._meta.prs = prs.map(p=>p.id);
+  focus.under = under;
+  focus.raised = raised;
+  focus.prs = prs;
   await saveState();
   paintFinish(early);
 }
 
+const BAD_DAY_REASONS = ['Poor sleep', 'Illness', 'Injury / pain', 'Low energy', 'Short on time', 'Deload'];
+
 function paintFinish(early){
+  const under = focus.under || [];
+  const raised = focus.raised || [];
+  const stalled = focus.stalled || [];
+  const prs = focus.prs || [];
+  const tKey = focus.date || todayKey();
+  const meta = (state.completions[tKey] && state.completions[tKey]._meta) || {};
+
   root.innerHTML = `
     <div class="finish-screen">
       <div class="fi">✓</div>
       <h2>${early ? 'Workout saved' : 'Workout complete'}</h2>
-      <p>${focus.sessionName} logged for today. Next time you train this session, your targets will already be updated.</p>
-      <button class="btn btn-primary" id="doneBtn">Done</button>
+      <p>${focus.sessionName} logged for today.</p>
+
+      ${prs.length ? `
+        <div class="finishcard pr">
+          <span class="eyebrow" style="color:var(--gold);">★ Personal best</span>
+          <p class="fcbody">
+            ${prs.map(p=>`<b>${p.name}</b> — est. 1RM ${num(roundToPlate(p.e1rm, unitKey()))}${unitLabel()}`).join('<br>')}
+          </p>
+          <p class="fchint">Strongest you've ever been on ${prs.length===1?'this lift':'these lifts'}.</p>
+        </div>` : ''}
+
+      ${raised.length ? `
+        <div class="finishcard raised">
+          <span class="eyebrow" style="color:var(--patina);">New floor</span>
+          <p class="fcbody">${raised.map(n=>`<b>${n}</b>`).join(', ')}
+          ${raised.length===1?'moved':'moved'} up. That weight is your new minimum.</p>
+        </div>` : ''}
+
+      ${under.length ? `
+        <div class="finishcard under">
+          <span class="eyebrow" style="color:var(--danger);">Below your floor</span>
+          <p class="fcbody">
+            ${under.map(u=>`<b>${u.name}</b> at ${num(u.low)}${unitLabel()}, floor ${num(u.floor)}${unitLabel()}`).join('<br>')}
+          </p>
+          <p class="fchint">Saved as logged — your floor hasn't moved. Note why, so future you
+          knows this was a rough day and not a stall.</p>
+          <div class="reasons">
+            ${BAD_DAY_REASONS.map(r=>`
+              <button class="reason ${meta.reason===r?'on':''}" data-reason="${r}">${r}</button>`).join('')}
+          </div>
+          <input type="text" id="dayNote" class="daynote" maxlength="140"
+                 placeholder="Anything else worth remembering?" value="${meta.note || ''}">
+        </div>` : ''}
+
+      ${stalled.length ? `
+        <div class="finishcard stalled">
+          <span class="eyebrow" style="color:var(--gold);">Time to deload?</span>
+          <p class="fcbody">
+            ${stalled.map(s=>`<b>${s.name}</b> has come in under its floor ${s.misses} sessions running.`).join('<br>')}
+          </p>
+          <p class="fchint">Your floor only moves down when you say so. Dropping it about
+          10% gives you room to build back up.</p>
+          ${stalled.map(s=>`
+            <button class="btn btn-ghost deloadbtn" data-deload="${s.id}">
+              ${s.name}: ${num(s.floor)}${unitLabel()} → ${num(s.to)}${unitLabel()}
+            </button>`).join('')}
+        </div>` : ''}
+
+      <button class="btn btn-primary" id="doneBtn" style="max-width:280px;">Done</button>
     </div>
   `;
-  root.querySelector('#doneBtn')?.addEventListener('click', renderHome);
+
+  root.querySelectorAll('[data-deload]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const exId = b.dataset.deload;
+      const spec = focus.exercises.find(e=> e.id === exId);
+      if(!spec) return;
+      const to = applyDeload(spec);
+      await saveState();
+      b.disabled = true;
+      b.textContent = `${spec.name}: floor now ${num(to)}${unitLabel()}`;
+      b.classList.add('deloaded');
+      focus.stalled = (focus.stalled || []).filter(s=> s.id !== exId);
+    });
+  });
+
+  root.querySelectorAll('[data-reason]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const m = state.completions[tKey]._meta;
+      m.reason = (m.reason === b.dataset.reason) ? '' : b.dataset.reason;
+      root.querySelectorAll('[data-reason]').forEach(o=>
+        o.classList.toggle('on', o.dataset.reason === m.reason));
+    });
+  });
+
+  root.querySelector('#doneBtn')?.addEventListener('click', async ()=>{
+    const noteEl = root.querySelector('#dayNote');
+    if(noteEl) state.completions[tKey]._meta.note = noteEl.value.trim();
+    await saveState();
+    renderHome();
+  });
+}
+
+/* ============================= EXERCISE PROGRESS =============================
+   The payoff for logging: one lift, its trend, and what it would take to beat. */
+function findExSpec(exId){
+  for(const s of planSessions()){
+    const hit = exercisesFor(s.id).find(e=> e.id === exId);
+    if(hit) return hit;
+  }
+  return null;
+}
+
+function renderExercise(exId, backTo){
+  const spec = findExSpec(exId);
+  const hist = getHistory(exId).slice().sort((a,b)=> a.date < b.date ? -1 : 1);
+  const name = (spec && spec.name) ||
+    (hist.length && (Object.values(state.completions).map(c=>c[exId]).find(Boolean)||{}).name) || 'Exercise';
+
+  const e1 = hist.map(h=> bestE1RM(h.sets)).filter(v=> v > 0);
+  const tops = hist.map(h=> topWeightOf(h.sets));
+  const bestE = e1.length ? Math.max(...e1) : 0;
+  const bestW = tops.length ? Math.max(...tops) : 0;
+  const first = e1.length ? e1[0] : 0;
+  const latest = e1.length ? e1[e1.length-1] : 0;
+  const gain = first > 0 ? ((latest - first) / first) * 100 : 0;
+  const floor = floorFor(exId);
+  const totalSets = hist.reduce((n,h)=> n + h.sets.length, 0);
+  const volume = hist.reduce((n,h)=> n + h.sets.reduce((m,s)=> m + (s.weight||0)*(s.reps||0), 0), 0);
+
+  const rows = hist.slice().reverse().map(h=>{
+    const pr = bestE1RM(h.sets) >= bestE - 0.01 && bestE > 0;
+    const d = new Date(h.date + 'T00:00:00');
+    return `
+      <div class="exline">
+        <span class="exlname">
+          ${d.toLocaleDateString(undefined,{ weekday:'short', day:'numeric', month:'short' })}
+          ${pr ? '<span class="pr-badge">★ Best</span>' : ''}
+        </span>
+        <span class="exspec">${loggedSpecCaps({ isTime: spec && spec.isTime, sets: h.sets })}</span>
+      </div>`;
+  }).join('');
+
+  root.innerHTML = `
+    <header class="top">
+      <button class="exit-btn" id="exBack" aria-label="Back">←</button>
+      <div class="brand" style="font-size:14px;">PROGRESS</div>
+      <div style="width:44px;"></div>
+    </header>
+    <main>
+      <div class="hero">
+        <span class="eyebrow">${routineName()}</span>
+        <h2 class="heroname">${name}</h2>
+        <p class="herometa">${hist.length} session${hist.length===1?'':'s'} · ${totalSets} sets logged</p>
+
+        ${e1.length > 1 ? `
+          <div class="chartwrap">
+            ${sparkline(e1, 300, 84)}
+            <div class="chartaxis">
+              <span>${num(roundToPlate(Math.min(...e1), unitKey()))}${unitLabel()}</span>
+              <span>Estimated 1RM</span>
+              <span>${num(roundToPlate(Math.max(...e1), unitKey()))}${unitLabel()}</span>
+            </div>
+          </div>` : `
+          <p class="fchint" style="margin-top:14px;">
+            ${hist.length ? 'One session so far — the trend appears once you log another.'
+                          : 'Nothing logged for this lift yet.'}
+          </p>`}
+      </div>
+
+      <div class="statrow" style="margin-top:14px;">
+        <div class="statcard"><div class="statnum">${bestW ? num(bestW) : '—'}</div><div class="statlabel">Best ${unitLabel()}</div></div>
+        <div class="statcard"><div class="statnum">${bestE ? num(roundToPlate(bestE, unitKey())) : '—'}</div><div class="statlabel">Est. 1RM</div></div>
+        <div class="statcard"><div class="statnum">${floor ? num(floor) : '—'}</div><div class="statlabel">Floor</div></div>
+      </div>
+
+      ${e1.length > 1 ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="cardhead">
+            <span class="eyebrow" style="margin:0;">Since you started</span>
+            <span class="cardmeta ${gain >= 0 ? 'up':'down'}">${gain >= 0 ? '+' : ''}${gain.toFixed(1)}%</span>
+          </div>
+          <p class="fchint" style="margin-top:6px;">
+            Estimated 1RM went from ${num(roundToPlate(first, unitKey()))}${unitLabel()}
+            to ${num(roundToPlate(latest, unitKey()))}${unitLabel()}.
+            Total volume lifted: ${num(Math.round(volume))}${unitLabel()}.
+          </p>
+        </div>` : ''}
+
+      ${hist.length ? `
+        <div style="margin-top:16px;">
+          <span class="eyebrow" style="display:block; margin:4px 0 6px 2px;">Every session</span>
+          <div class="card"><div class="exlist" style="margin:0;">${rows}</div></div>
+        </div>` : ''}
+    </main>
+  `;
+  root.querySelector('#exBack')?.addEventListener('click', ()=>{
+    if(backTo === 'home') renderHome(); else renderHistory();
+  });
+}
+
+/* ============================= BACKUP =============================
+   The whole point is surviving this browser. Export writes a plain JSON file you
+   can keep anywhere; import replaces what's here after an explicit confirmation. */
+const BACKUP_VERSION = 1;
+
+function backupPayload(){
+  return JSON.stringify({
+    app: 'auxano',
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    state: { setup:state.setup, history:state.history, completions:state.completions,
+             floors:state.floors, settings:state.settings },
+  }, null, 2);
+}
+
+function backupStat(msg, bad){
+  const el = root.querySelector('#backupStat');
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'backupstat' + (bad ? ' bad' : ' good');
+}
+
+function exportBackup(){
+  try{
+    const blob = new Blob([backupPayload()], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `auxano-${todayKey()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 1000);
+    const n = Object.keys(state.completions).filter(hasLoggedDay).length;
+    backupStat(`Exported ${n} session${n===1?'':'s'}.`);
+  }catch(e){
+    backupStat('Export failed — your browser blocked the download.', true);
+  }
+}
+
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onerror = ()=> backupStat("Couldn't read that file.", true);
+  reader.onload = ()=>{
+    let parsed = null;
+    try{ parsed = JSON.parse(String(reader.result)); }
+    catch(e){ return backupStat("That isn't a valid backup file.", true); }
+    if(!parsed || parsed.app !== 'auxano' || !parsed.state){
+      return backupStat("That doesn't look like an Auxano backup.", true);
+    }
+    // Run it through the same validation as a normal load, so a hand-edited or
+    // older file can't put the app into a state it can't render.
+    const incoming = normalizeState(parsed.state);
+    const sessions = Object.keys(incoming.completions).filter(dk=>{
+      const d = incoming.completions[dk];
+      return !!d && Object.keys(d).some(k=>k!=='_meta');
+    }).length;
+
+    showConfirm(
+      `Replace everything with this backup?<br><br>` +
+      `It holds <b>${sessions}</b> logged session${sessions===1?'':'s'}` +
+      `${incoming.setup ? ` and the <b>${incoming.setup.routineName}</b> routine` : ''}.<br><br>` +
+      `Your current data is overwritten. This can't be undone.`,
+      'Replace',
+      async ()=>{
+        const dev = state.dev;            // keep the test panel where it was
+        state = incoming;
+        state.dev = dev;
+        await saveState();
+        renderHistory();
+        backupStat(`Imported ${sessions} session${sessions===1?'':'s'}.`);
+      },
+      { danger:true }
+    );
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Logging a day you missed ---------- */
+function promptBackfill(){
+  const today = todayKey();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="bfTitle">
+      <p id="bfTitle" style="margin-bottom:12px;">Log a session you missed</p>
+      <label class="ellabel" for="bfDate">Date</label>
+      <input type="date" id="bfDate" max="${today}" value="${today}" style="margin:6px 0 14px;">
+      <label class="ellabel" for="bfSession">Session</label>
+      <select id="bfSession" style="margin:6px 0 18px; width:100%;">
+        ${planSessions().map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+      </select>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="bfCancel">Cancel</button>
+        <button class="btn btn-primary" id="bfGo">Start logging</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('#bfCancel').addEventListener('click', close);
+  overlay.querySelector('#bfGo').addEventListener('click', ()=>{
+    const d = overlay.querySelector('#bfDate').value;
+    const sid = overlay.querySelector('#bfSession').value;
+    if(!d || !sid) return;
+    close();
+    // Reviewing pre-fills from whatever is already stored for that date.
+    renderSession(sid, hasLoggedDay(d), d);
+  });
+  overlay.querySelector('#bfDate').focus();
+}
+
+/* ---------- Swapping an exercise mid-session ---------- */
+function promptSwap(){
+  const { f, exSpec } = currentCell();
+  const options = [];
+  planSessions().forEach(s=>{
+    exercisesFor(s.id).forEach(e=>{
+      if(e.id !== exSpec.id && !options.some(o=>o.name===e.name)) options.push(e);
+    });
+  });
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="swTitle">
+      <p id="swTitle" style="margin-bottom:6px;">Swap ${exSpec.name}</p>
+      <p class="fchint" style="margin:0 0 14px;">
+        Rack taken or something hurting? Pick a replacement for today only —
+        your routine stays as it is.
+      </p>
+      <select id="swPick" style="width:100%; margin-bottom:18px;">
+        ${options.map(e=>`<option value="${e.id}">${e.name}</option>`).join('')}
+      </select>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="swCancel">Cancel</button>
+        <button class="btn btn-primary" id="swGo" ${options.length?'':'disabled'}>Swap</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = ()=> overlay.remove();
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) close(); });
+  overlay.querySelector('#swCancel').addEventListener('click', close);
+  overlay.querySelector('#swGo').addEventListener('click', ()=>{
+    const pick = options.find(o=> o.id === overlay.querySelector('#swPick').value);
+    close();
+    if(!pick) return;
+    // Keep the prescribed sets/reps of the slot being filled; take the new lift's
+    // identity, increment and equipment so progression and plate math stay right.
+    const replacement = { ...pick, sets: exSpec.sets, repMin: exSpec.repMin, repMax: exSpec.repMax };
+    focus.exercises[f.exIdx] = replacement;
+    delete sessionDraft[exSpec.id];
+    sessionDraft[replacement.id] = Array.from({length: replacement.sets},
+      ()=>({ weight:null, reps:null, done:false, touched:false, warmup:false }));
+    focus.flat = [];
+    focus.exercises.forEach((e,exIdx)=>{
+      for(let i=0;i<sessionDraft[e.id].length;i++) focus.flat.push({exIdx, setIdx:i});
+    });
+    focus.pos = focus.flat.findIndex(x=> x.exIdx === f.exIdx);
+    paintFocus();
+  });
 }
 
 /* ============================= HISTORY / TRAINING LOG ============================= */
 function computeStreak(){
   let streak = 0;
-  let d = new Date();
+  let d = nowDate();
   for(let i=0;i<400;i++){
     const wk = weekdayKey(d);
-    const dk = d.toISOString().slice(0,10);
+    const dk = dateKey(d);
     const scheduled = !!state.setup.dayMap[wk];
     if(scheduled){
       if(hasLoggedDay(dk)) streak++;
       else if(dk !== todayKey()) break; // today not done yet doesn't break the streak
     }
-    d = new Date(d); d.setDate(d.getDate()-1);
+    d = addDays(d, -1);
   }
   return streak;
 }
 
-function computeStats(){
-  const totalSessions = Object.keys(state.completions).filter(hasLoggedDay).length;
-  const now = new Date();
-  const todayIdx = DAY_ORDER.indexOf(weekdayKey(now));
-  const monday = new Date(now); monday.setDate(now.getDate()-todayIdx);
-  let scheduledThisWeek=0, doneThisWeek=0;
-  for(let i=0;i<7;i++){
-    const d = new Date(monday); d.setDate(monday.getDate()+i);
-    const wk = DAY_ORDER[i];
-    if(state.setup.dayMap[wk]){
-      scheduledThisWeek++;
-      if(hasLoggedDay(d.toISOString().slice(0,10))) doneThisWeek++;
-    }
-  }
-  return { totalSessions, scheduledThisWeek, doneThisWeek, streak: computeStreak() };
+// One source of truth for "what does this week look like" — Home and the log both use it.
+function weekCells(ref){
+  const monday = weekStart(ref || nowDate());
+  const tKey = todayKey();
+  return DAY_ORDER.map((wk,i)=>{
+    const d = addDays(monday, i);
+    const dk = dateKey(d);
+    const sessionId = state.setup.dayMap[wk];
+    const done = hasLoggedDay(dk);
+    let status = 'rest';
+    if(done) status = 'done';
+    else if(sessionId && dk < tKey) status = 'missed';
+    else if(sessionId) status = 'scheduled';
+    return { wk, date:d, dk, dayNum:d.getDate(), label:DAYS[i].label, sessionId, status, isToday: dk===tKey };
+  });
 }
 
+function computeStats(){
+  const totalSessions = Object.keys(state.completions).filter(hasLoggedDay).length;
+  const week = weekCells();
+  return {
+    totalSessions,
+    scheduledThisWeek: week.filter(c=>c.sessionId).length,
+    doneThisWeek: week.filter(c=>c.sessionId && c.status==='done').length,
+    streak: computeStreak(),
+  };
+}
+
+// Four Monday-aligned weeks ending with the current one, so every column really is
+// the same weekday. The old version started at today-27 and only lined up on Sundays.
 function buildHeatmap(){
-  const today = new Date();
+  const start = addDays(weekStart(nowDate()), -21);
+  const tKey = todayKey();
   const cells = [];
-  for(let i=27;i>=0;i--){
-    const d = new Date(today); d.setDate(today.getDate()-i);
-    const dk = d.toISOString().slice(0,10);
-    const wk = weekdayKey(d);
-    const scheduled = !!state.setup.dayMap[wk];
-    const done = hasLoggedDay(dk);
-    let status='blank';
-    if(done) status='done';
-    else if(scheduled && dk < todayKey()) status='missed';
-    else if(scheduled) status='scheduled';
-    cells.push({ dk, dayNum:d.getDate(), status, isToday: dk===todayKey() });
+  for(let i=0;i<28;i++){
+    const d = addDays(start, i);
+    const dk = dateKey(d);
+    const scheduled = !!state.setup.dayMap[weekdayKey(d)];
+    let status = 'blank';
+    if(hasLoggedDay(dk)) status = 'done';
+    else if(scheduled && dk < tKey) status = 'missed';
+    else if(scheduled) status = 'scheduled';
+    cells.push({ dk, dayNum:d.getDate(), status, isToday: dk===tKey, future: dk > tKey });
   }
   return cells;
 }
@@ -1056,7 +3091,7 @@ function renderHistory(){
   const dateKeys = Object.keys(state.completions).filter(hasLoggedDay).sort().reverse();
 
   const heatmapHTML = cells.map(c=>
-    `<div class="hcell ${c.status} ${c.isToday?'istoday':''}" title="${c.dk}">${c.dayNum}</div>`
+    `<div class="hcell ${c.status} ${c.isToday?'istoday':''} ${c.future?'future':''}" title="${c.dk}">${c.dayNum}</div>`
   ).join('');
 
   const listHTML = dateKeys.length ? dateKeys.map(dk=>{
@@ -1067,32 +3102,41 @@ function renderHistory(){
     const dateLabel = d.toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric' });
     const exHTML = exIds.map(exId=>{
       const e = entry[exId];
-      const setsStr = e.sets.map(s=>`${s.weight}kg×${s.reps}${e.isTime?'s':''}`).join(', ');
-      return `<div class="loglex"><span class="logexname">${e.name}</span><span class="logexsets">${setsStr}</span></div>`;
+      const pr = meta.prs && meta.prs.indexOf(exId) > -1;
+      return `
+        <button class="exline tappable" data-exprog="${exId}">
+          <span class="exlname">${e.name}${pr ? '<span class="pr-badge">★ PR</span>' : ''}</span>
+          <span class="exspec">${loggedSpecCaps(e)}</span>
+        </button>`;
     }).join('');
+    const flag = (meta.reason || meta.note) ? `
+      <div class="dayflag">
+        ${meta.reason ? `<span class="reasontag">${meta.reason}</span>` : ''}
+        ${meta.note ? `<span class="reasonnote">${meta.note}</span>` : ''}
+      </div>` : '';
     return `
       <div class="card logday">
-        <div class="logdate">${dateLabel}</div>
-        <div class="logsession">${meta.sessionName}</div>
-        <div class="logexlist">${exHTML}</div>
+        <span class="eyebrow">${dateLabel}</span>
+        <h3 class="logname">${meta.sessionName}</h3>
+        ${flag}
+        <div class="exlist">${exHTML}</div>
       </div>
     `;
   }).join('') : `<div class="empty"><div class="plateicon">◐</div>No workouts logged yet.</div>`;
 
   root.innerHTML = `
     <header class="top">
-      <button class="exit-btn" id="backHomeFromHistory" aria-label="Back to home">←</button>
-      <div class="brand" style="font-size:15px;">TRAINING LOG</div>
-      <div style="width:44px;"></div>
+      <div class="brand"><span class="bar"></span>TRAINING LOG</div>
     </header>
     <main>
       <div class="statrow">
-        <div class="statcard"><div class="statnum">${stats.totalSessions}</div><div class="statlabel">Sessions logged</div></div>
-        <div class="statcard"><div class="statnum">${stats.streak}</div><div class="statlabel">Day streak</div></div>
+        <div class="statcard"><div class="statnum">${stats.totalSessions}</div><div class="statlabel">Sessions</div></div>
+        <div class="statcard"><div class="statnum">${stats.streak}</div><div class="statlabel">Streak</div></div>
         <div class="statcard"><div class="statnum">${stats.doneThisWeek}/${stats.scheduledThisWeek}</div><div class="statlabel">This week</div></div>
       </div>
       <div class="card">
         <span class="eyebrow">Last four weeks</span>
+        <div class="heatgrid heathead">${DAYS.map(d=>`<div class="hlabel">${d.label}</div>`).join('')}</div>
         <div class="heatgrid">${heatmapHTML}</div>
         <div class="heatlegend">
           <span><i class="lg done"></i>Trained</span>
@@ -1104,15 +3148,67 @@ function renderHistory(){
         <span class="eyebrow" style="display:block; margin:4px 0 10px 2px;">All sessions</span>
         ${listHTML}
       </div>
+      <div class="backfillzone">
+        <button class="btn btn-ghost" id="backfillBtn">Log a past session</button>
+        <p class="backuphint">Forgot to log a day? Add it with the date it happened.</p>
+      </div>
+
+      <div class="backupzone">
+        <span class="eyebrow">Backup</span>
+        <p class="backuphint">
+          Everything lives in this browser only. Clear your site data or switch
+          browsers and it's gone — keep a copy.
+        </p>
+        <div class="backuprow">
+          <button class="btn btn-ghost" id="exportBtn">Export</button>
+          <button class="btn btn-ghost" id="importBtn">Import</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <p class="backupstat" id="backupStat"></p>
+      </div>
+      ${dateKeys.length ? `
+        <div class="dangerzone">
+          <button class="btn btn-danger" id="clearLog">Erase training log</button>
+          <p class="dangerhint">
+            Removes all ${dateKeys.length} logged session${dateKeys.length===1?'':'s'}.
+            Your routine and your strength floors stay as they are.
+          </p>
+        </div>` : ''}
     </main>
+    ${tabbarHTML('log')}
   `;
-  root.querySelector('#backHomeFromHistory')?.addEventListener('click', renderHome);
+
+  root.querySelectorAll('[data-exprog]').forEach(b=>
+    b.addEventListener('click', ()=> renderExercise(b.dataset.exprog, 'log')));
+
+  root.querySelector('#backfillBtn')?.addEventListener('click', promptBackfill);
+  root.querySelector('#exportBtn')?.addEventListener('click', exportBackup);
+  root.querySelector('#importBtn')?.addEventListener('click', ()=> root.querySelector('#importFile')?.click());
+  root.querySelector('#importFile')?.addEventListener('change', (e)=> importBackup(e.target.files && e.target.files[0]));
+
+  root.querySelector('#clearLog')?.addEventListener('click', ()=>{
+    showConfirm(
+      `Erase all ${dateKeys.length} logged session${dateKeys.length===1?'':'s'}?<br><br>` +
+      `Your routine, sets and reps, and your strength floors are kept — ` +
+      `only the log is cleared. This can't be undone.`,
+      'Erase log',
+      async ()=>{
+        state.completions = {};
+        state.history = {};
+        await saveState();
+        renderHistory();
+      },
+      { danger:true }
+    );
+  });
+  bindTabs();
 }
 
 /* ============================= INIT ============================= */
 (async function init(){
   root.innerHTML = `<div class="empty"><div class="plateicon">◐</div>Loading Auxano…</div>`;
   await loadState();
+  paintDevBar();
   render();
 })();
 </script>
