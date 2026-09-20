@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="color-scheme" content="dark">
 <title>Auxano — Progressive Overload</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -263,19 +264,26 @@
   .exspec b{ color:var(--chalk); font-weight:500; }
   .exspec .u{ color:var(--steel); font-size:0.88em; }
 
-  /* Set-by-set records: tighter tracking and allowed to wrap, because a five-set
-     exercise is a long line at the prescription's letter-spacing. */
+  /* Set-by-set records. Each set gets its own pill so the grouping is obvious
+     without leaning on a separator character, and the row can wrap cleanly. */
   .exspec.setlist{
-    text-transform:none; letter-spacing:0.02em; font-size:12.5px;
-    display:flex; flex-wrap:wrap; align-items:baseline;
+    text-transform:none; letter-spacing:0; font-size:12.5px;
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
   }
-  .setchip{ white-space:nowrap; }
-  .setchip i{ font-style:normal; color:var(--steel); padding:0 1px; }
-  .exspec .sep{ font-style:normal; color:var(--line); padding:0 6px; }
-  .setchip.warm b{ color:var(--chalk-dim); font-weight:400; }
+  .setchip{
+    white-space:nowrap; background:rgba(255,255,255,0.045);
+    border:1px solid rgba(255,255,255,0.05); border-radius:7px;
+    padding:4px 9px; line-height:1.35;
+  }
+  .setchip b{ color:var(--chalk); font-weight:600; }
+  .setchip .u{ color:var(--steel); font-size:0.84em; margin-left:1.5px; }
+  .setchip i{ font-style:normal; color:var(--steel); padding:0 5px; }
+  .exspec .sep{ display:none; }        /* the pills separate themselves */
+  .setchip.warm{ background:none; border-style:dashed; border-color:var(--gold-dim); }
+  .setchip.warm b{ color:var(--chalk-dim); font-weight:500; }
   .setchip.warm::after{
-    content:'w'; color:var(--gold-dim); font-size:0.75em;
-    vertical-align:super; margin-left:2px;
+    content:'warm-up'; color:var(--gold-dim); font-size:0.72em;
+    letter-spacing:0.08em; text-transform:uppercase; margin-left:6px;
   }
   /* rows that open a progress view */
   .exline.tappable{
@@ -641,8 +649,10 @@
 
 
   .pr-badge{
-    display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--patina);
-    font-family:'IBM Plex Mono',monospace; margin-top:6px; text-transform:uppercase; letter-spacing:0.04em;
+    display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--patina);
+    font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:0.09em;
+    border:1px solid var(--patina); border-radius:20px; padding:2px 8px;
+    margin-left:9px; vertical-align:middle;
   }
 
   .stickybar{
