@@ -670,7 +670,7 @@
     overflow:hidden; text-align:left;
   }
   .targetcard.rule-progress{ border-color:var(--patina); }
-  .targetcard.rule-stall, .targetcard.rule-return{ border-color:var(--gold-dim); }
+  .targetcard.rule-stall, .targetcard.rule-return, .targetcard.rule-plateau{ border-color:var(--gold-dim); }
   .targetcard.first{ padding:12px 14px; }
   .tgtrow{
     display:flex; align-items:baseline; justify-content:space-between; gap:12px;
@@ -703,6 +703,35 @@
   .tsl.now{ border-color:var(--gold); color:var(--chalk); background:var(--gold-wash); }
   .tsl.hit{ color:var(--patina); background:rgba(107,156,110,0.1); }
   .tsl.miss{ color:var(--danger); background:rgba(224,85,72,0.1); }
+  /* a target the session itself moved — dotted, so a number that changed under
+     you never looks like a number you misread */
+  .tsl.adj{ border-style:dashed; border-color:var(--gold-dim); }
+
+  /* ---------- Effort ---------- */
+  .effortbar{
+    width:100%; max-width:330px; margin:12px 0 0;
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:9px 10px 9px 13px;
+  }
+  .effortbar .eflbl{
+    flex:1; min-width:0; font-size:12px; color:var(--chalk-dim);
+    text-align:left; line-height:1.3;
+  }
+  .effortbar.rated .eflbl{ color:var(--steel); }
+  /* riding inside the rest band: no card of its own, just a hairline above it */
+  .effortbar.inband{
+    margin:9px -2px 0; padding:9px 0 0; background:none;
+    border:none; border-top:1px solid var(--line); border-radius:0;
+  }
+  .efbtns{ display:flex; gap:4px; flex-shrink:0; }
+  .efbtn{
+    background:var(--panel-raised); border:1px solid var(--line); color:var(--chalk-dim);
+    border-radius:8px; padding:7px 10px; font-size:12px; line-height:1;
+    min-height:32px;
+  }
+  .efbtn.on{ background:var(--gold); border-color:var(--gold); color:var(--on-gold); }
+  .effortbar.rated .efbtn:not(.on){ opacity:0.45; }
   .tgtsub{ color:var(--steel); }
   .tgtev li.ev-set::before{ background:var(--chalk-dim); }
 
@@ -717,7 +746,7 @@
     font-size:11px; background:var(--panel-raised); color:var(--gold);
   }
   .rule-progress .tgticon{ color:var(--patina); }
-  .rule-stall .tgticon, .rule-return .tgticon{ color:var(--danger); }
+  .rule-stall .tgticon, .rule-return .tgticon, .rule-plateau .tgticon{ color:var(--danger); }
   .tgttext{ flex:1; min-width:0; color:var(--chalk); }
   .tgtchev{
     font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:0.12em;
@@ -739,7 +768,30 @@
   }
   .tgtev li.ev-rule::before, .tgtev li.ev-stall::before{ background:var(--gold-dim); }
   .tgtev li.ev-floor::before{ background:var(--gold); }
-  .tgtev li.ev-clamp::before{ background:var(--danger); }
+  .tgtev li.ev-clamp::before, .tgtev li.ev-plateau::before{ background:var(--danger); }
+  .tgtev li.ev-trend::before{ background:var(--patina); }
+  .tgtev li.ev-effort::before{ background:var(--gold-dim); }
+  .tgtev li.ev-conf{ color:var(--chalk-dim); }
+
+  /* ---------- Next session, on the Progress screen ---------- */
+  .nextrow{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:12px; margin-top:8px; flex-wrap:wrap;
+  }
+  .nexthead{ font-size:16px; color:var(--chalk); font-weight:600; }
+  .nextval{
+    font-family:'IBM Plex Mono',monospace; font-size:15px; color:var(--gold);
+    font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .nextval em{ font-style:normal; font-size:0.72em; color:var(--steel); margin-left:1px; }
+  .conf{
+    display:inline-block; margin-top:10px;
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.09em;
+    text-transform:uppercase; color:var(--steel);
+    border:1px solid var(--line); border-radius:999px; padding:4px 9px;
+  }
+  .conf-high{ color:var(--patina); border-color:rgba(107,156,110,0.35); }
+  .conf-low{ color:var(--gold-dim); border-color:var(--gold-dim); }
 
   .floornote{
     font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:0.11em;
@@ -1452,7 +1504,16 @@ function seedDemo(weeks){
         else if(r < 0.78) reps = i === exSpec.sets - 1 ? exSpec.repMax - 1 : exSpec.repMax;
         else if(r < 0.92) reps = Math.max(exSpec.repMin, exSpec.repMax - 2);
         else              reps = Math.max(1, exSpec.repMin - 1);                  // stalled
-        sets.push({ weight, reps });
+        /* Effort, the way it actually gets logged: sets get harder as the
+           exercise goes on, a deload feels easy throughout, and about one set
+           in eight goes unrated because you forgot. */
+        let effort;
+        if(rnd() < 0.12)       effort = null;
+        else if(isDeload)      effort = 'easy';
+        else if(i === 0)       effort = rnd() < 0.5 ? 'easy' : 'ok';
+        else if(i >= exSpec.sets - 1) effort = rnd() < 0.65 ? 'hard' : 'ok';
+        else                   effort = rnd() < 0.7 ? 'ok' : 'hard';
+        sets.push({ weight, reps, ...(effort ? { effort } : {}) });
       }
 
       const working = sets.filter(s=>!s.warmup);
@@ -2389,8 +2450,13 @@ function consecutiveMisses(exSpec){
   }
   return n;
 }
+/* Two ways to earn the offer: repeatedly coming in under your floor, or the
+   engine finding a plateau — a month at one weight with the best set never
+   moving. The second is the one people miss, because nothing looks wrong. */
 function shouldOfferDeload(exSpec){
-  return !exSpec.isTime && consecutiveMisses(exSpec) >= DELOAD_TRIGGER;
+  if(exSpec.isTime) return false;
+  if(consecutiveMisses(exSpec) >= DELOAD_TRIGGER) return true;
+  return planFor(exSpec).rule === 'plateau';
 }
 function deloadTarget(exSpec){
   const floor = floorFor(exSpec.id);
@@ -2473,7 +2539,15 @@ function sparkline(points, w, h){
 const PROGRESSION = {
   DETRAIN_DAYS: 21,        // away this long and the last session stops being a fair guide
   STALL_SESSIONS: 2,       // consecutive misses before a deload is worth offering
+  PLATEAU_SESSIONS: 4,     // same weight this many times with no rep gain = stuck, not stalling
   DETRAIN_FACTOR: 0.9,
+  TREND_WINDOW: 5,         // how many recent sessions the trend is read from
+
+  /* How hard a set was, as reps left in reserve. Three buttons is all anyone
+     will actually tap between sets, and three is enough signal: the difference
+     that matters is "had room" / "about right" / "nothing left". */
+  EFFORT_RIR: { easy: 3, ok: 1, hard: 0 },
+  EFFORT_WORD: { easy: 'easy', ok: 'about right', hard: 'hard' },
 
   round(v, unit){
     const smallest = unit === 'lb' ? 2.5 : 1.25;
@@ -2482,6 +2556,17 @@ const PROGRESSION = {
   working(sets){ return (sets || []).filter(s => !s.warmup); },
   daysBetween(a, b){
     return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+  },
+  /* null, not 0, when nothing was logged — an unrated set must never be read as
+     a maximal one. Every effort-aware branch below checks for null first, so a
+     history with no ratings produces exactly the answers it did before. */
+  rirOf(s){
+    const e = s && s.effort;
+    return (e && PROGRESSION.EFFORT_RIR[e] !== undefined) ? PROGRESSION.EFFORT_RIR[e] : null;
+  },
+  e1rm(w, r){
+    w = +w || 0; r = +r || 0;
+    return r > 0 ? w * (1 + r / 30) : 0;     // Epley
   },
 
   /* A session only counts as "completed at a weight" if you did the prescribed
@@ -2494,6 +2579,8 @@ const PROGRESSION = {
     const atTop = work.filter(s => (+s.weight || 0) === top);
     // set-by-set, in the order performed — per-set targets are built from this
     const reps = atTop.map(s => +s.reps || 0);
+    const rirs = atTop.map(s => PROGRESSION.rirOf(s));
+    const rated = rirs.filter(v => v !== null);
     return {
       weight: top,
       setsAtTop: atTop.length,
@@ -2503,7 +2590,58 @@ const PROGRESSION = {
       allAtMax: atTop.length >= spec.sets && reps.every(r => r >= spec.repMax),
       allAtMin: atTop.length >= spec.sets && reps.every(r => r >= spec.repMin),
       reps,
+      // how hard it was, where you said so — sanitised once, here, so nothing
+      // downstream can surface a value the app never wrote
+      efforts: atTop.map(s => (s && PROGRESSION.EFFORT_RIR[s.effort] !== undefined) ? s.effort : null),
+      rirs,
+      rated: rated.length,
+      allRated: rated.length > 0 && rated.length === atTop.length,
+      avgRIR: rated.length ? rated.reduce((a, b) => a + b, 0) / rated.length : null,
     };
+  },
+
+  /* ---------- What the last few sessions say ----------
+     One session is noise. A fluke good day sets a target you can't repeat, and
+     one bad day inside a clear climb looks identical to a genuine stall. The
+     shape of four or five sessions separates them. */
+  trend(spec, hist){
+    const pts = [];
+    for(const h of hist){
+      const e = PROGRESSION.topEffort(spec, h.sets);
+      if(!e) continue;
+      const best = Math.max(0, ...PROGRESSION.working(h.sets)
+        .map(s => PROGRESSION.e1rm(s.weight, s.reps)));
+      pts.push({ date: h.date, weight: e.weight, maxReps: e.maxReps,
+                 complete: !!e.allAtMin, e1rm: Math.round(best * 10) / 10 });
+    }
+
+    const win = pts.slice(-PROGRESSION.TREND_WINDOW);
+    let dir = null, delta = 0;
+    if(win.length >= 2){
+      // least-squares slope of estimated 1RM across the window
+      const n = win.length, mx = (n - 1) / 2;
+      const my = win.reduce((a, p) => a + p.e1rm, 0) / n;
+      let num = 0, den = 0;
+      win.forEach((p, i) => { num += (i - mx) * (p.e1rm - my); den += (i - mx) * (i - mx); });
+      const slope = den ? num / den : 0;
+      delta = Math.round((win[n - 1].e1rm - win[0].e1rm) * 10) / 10;
+      // half a percent of your current strength per session is inside the noise
+      const eps = Math.max(0.25, my * 0.005);
+      dir = slope > eps ? 'up' : (slope < -eps ? 'down' : 'flat');
+    }
+
+    /* Consecutive recent sessions at the same top weight where the best set
+       never improved. Reps still climbing is progress, so that resets it —
+       otherwise every double-progression block would read as a plateau. */
+    let stuck = 0;
+    if(pts.length){
+      const topW = pts[pts.length - 1].weight;
+      for(let i = pts.length - 1; i >= 0 && pts[i].weight === topW; i--) stuck++;
+      const run = pts.slice(pts.length - stuck);
+      if(run.some((p, i) => i > 0 && p.maxReps > run[0].maxReps)) stuck = 0;
+    }
+
+    return { points: pts, window: win, dir, delta, stuck };
   },
 
   plan(input){
@@ -2535,13 +2673,25 @@ const PROGRESSION = {
         headline = 'First time';
         detail = 'Nothing logged for this lift yet — whatever you do today becomes the baseline it works from.';
       }
-      return PROGRESSION.finish({ spec, unit, floor, rule, weight, reps, headline, detail, ev, last:null });
+      return PROGRESSION.finish({ spec, unit, floor, rule, weight, reps, headline, detail, ev, last:null,
+        trend:{ points:[], window:[], dir:null, delta:0, stuck:0 },
+        confidence:'low', confidenceWhy:'nothing logged for this lift yet' });
     }
 
     const last = hist[hist.length - 1];
     const eff  = PROGRESSION.topEffort(spec, last.sets);
     const gap  = today ? PROGRESSION.daysBetween(last.date, today) : 0;
+    const tr   = PROGRESSION.trend(spec, hist);
     ev.push({ k:'last', t:`Last time: ${eff.reps.map(r => `${n(eff.weight)}${unitLbl}×${r}`).join(', ')}` });
+    if(eff.rated){
+      ev.push({ k:'effort', t:`Felt: ${eff.efforts.map(e =>
+        e ? PROGRESSION.EFFORT_WORD[e] : 'unrated').join(', ')}` });
+    }
+    if(tr.dir){
+      const w = tr.window;
+      ev.push({ k:'trend', t:`Est. 1RM over ${w.length} sessions: ${n(w[0].e1rm)} → ` +
+        `${n(w[w.length-1].e1rm)}${unitLbl} (${tr.dir}${tr.delta ? `, ${tr.delta > 0 ? '+' : ''}${n(tr.delta)}` : ''})` });
+    }
 
     // consecutive sessions that failed to complete the prescription
     let misses = 0;
@@ -2550,6 +2700,11 @@ const PROGRESSION = {
       if(e && e.allAtMin) break;
       misses++;
     }
+
+    /* Was the last session a bad day or the start of a real stall? A single
+       miss inside a climb is a bad day; the same miss on a flat or falling
+       trend is the thing the stall rule exists for. */
+    const badDay = misses === 1 && tr.dir === 'up' && hist.length >= 3;
 
     // ---------- the ladder; first match wins ----------
     if(gap >= PROGRESSION.DETRAIN_DAYS){
@@ -2560,20 +2715,68 @@ const PROGRESSION = {
       detail = `It's been ${gap} days since you trained this. Starting about 10% under your last working weight gives you a session to find it again.`;
       ev.push({ k:'gap', t:`${gap} days since the last session` });
 
+    } else if(!eff.allAtMax && eff.weight > 0 && tr.stuck >= PROGRESSION.PLATEAU_SESSIONS){
+      /* Sitting at the same weight for a month with the best set never moving
+         is a different problem from missing twice, and holding is not the
+         answer to it. Caught here, above stall, because it is the more specific
+         diagnosis — and it needs a deload rather than another attempt. */
+      rule = 'plateau';
+      weight = eff.weight; reps = spec.repMin;
+      /* The weight is held rather than dropped: only a deliberate deload moves
+         the floor, and suggesting a weight the floor would claw back next
+         session is worse than saying nothing. So this names the diagnosis and
+         points at the button that acts on it, and today still has a real
+         target — the per-set numbers below are unchanged. */
+      headline = 'Stuck at this weight';
+      detail = `${tr.stuck} sessions at ${n(eff.weight)}${unitLbl} and your best set hasn't moved — ` +
+               `that's a plateau, not a bad run. Today's targets stand, but if this one misses too, ` +
+               `use Deload on this lift's page: it drops your floor about 10% so you can climb back into it. ` +
+               `That usually clears a plateau inside three sessions.`;
+      ev.push({ k:'plateau', t:`${tr.stuck} sessions stuck at ${n(eff.weight)}${unitLbl}` });
+
     } else if(misses >= PROGRESSION.STALL_SESSIONS){
       rule = 'stall';
       weight = eff.weight; reps = spec.repMin;
       headline = 'Same weight again';
-      detail = `You've fallen short of ${spec.repMin} reps ${misses} sessions running. Hold here — and if the next one misses too, dropping about 10% is the faster way back up.`;
+      /* A stall only means "too heavy" if you were actually near your limit.
+         Repeatedly missing sets that felt easy is a different problem, and
+         telling you to deload for it would be the wrong advice. */
+      const easyStall = eff.avgRIR !== null && eff.avgRIR >= 2;
+      if(easyStall){
+        detail = `You've fallen short of ${spec.repMin} reps ${misses} sessions running — but you logged those sets as easy. ` +
+                 `That isn't the weight being too heavy, so don't drop it. Take the next one closer to failure.`;
+      } else {
+        detail = `You've fallen short of ${spec.repMin} reps ${misses} sessions running. Hold here — and if the next one misses too, dropping about 10% is the faster way back up.`;
+      }
       ev.push({ k:'stall', t:`${misses} sessions short of ${spec.repMin} reps` });
 
     } else if(eff.allAtMax){
       rule = 'progress';
-      weight = PROGRESSION.round(eff.weight + (spec.inc || 0), unit);
+      const base = spec.inc || 0;
+
+      /* Size the jump to how much was left in the tank. Clearing the top of
+         the range with three reps in reserve and clearing it by a whisker are
+         the same event to a plain +2.5kg, and they should not be. */
+      let mult = 1, room = '';
+      if(base > 0 && eff.avgRIR !== null && eff.allRated){
+        if(eff.avgRIR >= 2.5){ mult = 2;   room = 'every set logged easy'; }
+        else if(eff.avgRIR >= 1.5){ mult = 1.5; room = 'those sets had room left'; }
+        else if(eff.avgRIR <= 0.5){ room = 'they were hard-earned'; }
+      }
+      weight = PROGRESSION.round(eff.weight + base * mult, unit);
+      // never let rounding hand back a jump that isn't actually bigger
+      if(mult > 1) weight = Math.max(weight, PROGRESSION.round(eff.weight + base, unit));
       reps = spec.repMin;
-      headline = spec.inc ? `Add ${n(spec.inc)}${unitLbl}` : 'Push for more reps';
+
+      // The headline quotes the jump that was applied, not the one intended,
+      // so rounding can never make the card contradict the steppers.
+      const applied = weight - eff.weight;
+      headline = applied > 0 ? `Add ${n(applied)}${unitLbl}` : 'Push for more reps';
       detail = `You hit ${spec.repMax} reps on all ${spec.sets} sets at ${n(eff.weight)}${unitLbl} — the top of your range. That's the signal to add weight and start the range again.`;
+      if(room && mult > 1) detail += ` And ${room}, so this is a bigger step than the usual ${n(base)}${unitLbl}.`;
+      else if(room) detail += ` And ${room}, so this is the standard step.`;
       ev.push({ k:'rule', t:`All ${spec.sets} sets reached ${spec.repMax} reps` });
+      if(mult > 1) ev.push({ k:'effort', t:`Effort sized the jump: ${n(base)} → ${n(applied)}${unitLbl}` });
 
     } else if(eff.allAtMin){
       rule = 'add-reps';
@@ -2584,6 +2787,11 @@ const PROGRESSION = {
       headline = 'Beat each set';
       detail = `Same weight. Every set has its own number — beat what that set did last time. ` +
                `Your weakest was ${eff.minReps}; clear all ${spec.sets} at ${spec.repMax} and the weight goes up.`;
+      // A set with reps to spare doesn't need the one-at-a-time crawl, and the
+      // per-set targets below say so — flag it here too so the two agree.
+      if(eff.rirs.some((v, i) => v !== null && v >= 2 && eff.reps[i] < spec.repMax)){
+        detail += ` Sets you logged as easy skip straight to ${spec.repMax} rather than crawling up one rep at a time.`;
+      }
       ev.push({ k:'rule', t:`Last set-by-set: ${eff.reps.join(', ')} of a target ${spec.repMax}` });
 
     } else if(!eff.complete){
@@ -2598,11 +2806,29 @@ const PROGRESSION = {
       weight = eff.weight; reps = spec.repMin;
       headline = 'Same weight';
       detail = `One or more sets came in under ${spec.repMin} reps last time. Stay here until all ${spec.sets} clear ${spec.repMin}.`;
+      // One miss inside a climb is a bad day, and saying so is the difference
+      // between "you're stuck" and "that happens" on a screen you read tired.
+      if(badDay) detail += ` Your estimated 1RM is still climbing across the last ${tr.window.length} sessions, so that reads as one off day rather than the weight running out.`;
       ev.push({ k:'rule', t:`Fell short of ${spec.repMin} reps` });
+      if(badDay) ev.push({ k:'trend', t:'Trend still up — treated as a bad day' });
     }
 
     if(floor > 0) ev.push({ k:'floor', t:`Floor ${n(floor)}${unitLbl}` });
-    return PROGRESSION.finish({ spec, unit, floor, rule, weight, reps, headline, detail, ev, last, gap });
+
+    /* ---------- how much to trust this ----------
+       Presenting a guess from one session with the same certainty as a call
+       backed by five is the fastest way to lose the user's trust the first
+       time it's wrong. Say which one this is. */
+    let conf = 'high', confWhy = '';
+    if(hist.length <= 1){ conf = 'low'; confWhy = 'only one session to read'; }
+    else if(gap >= PROGRESSION.DETRAIN_DAYS){ conf = 'low'; confWhy = `${gap} days since you trained this`; }
+    else if(hist.length < 4){ conf = 'medium'; confWhy = `${hist.length} sessions logged`; }
+    else if(!eff.rated){ conf = 'medium'; confWhy = 'no effort logged, so the size of the step is a guess'; }
+    else if(tr.dir === 'down'){ conf = 'medium'; confWhy = 'your recent trend is downward'; }
+    ev.push({ k:'conf', t:`Confidence: ${conf}${confWhy ? ` — ${confWhy}` : ' — consistent recent history'}` });
+
+    return PROGRESSION.finish({ spec, unit, floor, rule, weight, reps, headline, detail, ev,
+                                last, gap, trend: tr, confidence: conf, confidenceWhy: confWhy });
   },
 
   /* Everything that must be true of any plan, applied in one place so no rule
@@ -2649,6 +2875,7 @@ const PROGRESSION = {
 
          · heavier bar than last time -> the range restarts, every set aims low
          · same bar -> beat what THAT set did, capped at the top of the range
+         · that set had reps to spare -> go straight to the top, skip the crawl
          · a set you didn't complete last time -> just complete it
 
        The exercise only advances when every set reaches the top, so these add
@@ -2660,6 +2887,7 @@ const PROGRESSION = {
     const targets = [];
     for(let i = 0; i < spec.sets; i++){
       const did = sameBar && lastEff ? lastEff.reps[i] : undefined;
+      const rir = sameBar && lastEff ? lastEff.rirs[i] : null;
       let r, why;
       if(!sameBar){
         r = spec.repMin;
@@ -2671,11 +2899,19 @@ const PROGRESSION = {
       } else if(did >= spec.repMax){
         r = spec.repMax;
         why = `hold ${spec.repMax}`;
+      } else if(rir !== null && rir >= 2){
+        /* Asking for one more rep than a set you finished with three in the
+           tank wastes a session. The rest of the ladder is unchanged, so this
+           only ever shortens the climb — it never demands more than the top. */
+        r = spec.repMax;
+        why = `${did} felt easy — go to ${spec.repMax}`;
       } else {
         r = clampR(did + 1);
-        why = `beat ${did}`;
+        why = rir === 0 ? `${did} was hard — one more` : `beat ${did}`;
       }
-      targets.push({ set: i + 1, weight, reps: r, was: did === undefined ? null : did, why });
+      targets.push({ set: i + 1, weight, reps: r,
+                     was: did === undefined ? null : did,
+                     wasEffort: (sameBar && lastEff && lastEff.efforts[i]) || null, why });
     }
 
     return {
@@ -2685,8 +2921,51 @@ const PROGRESSION = {
       allAtTop: targets.every(t => t.reps >= spec.repMax),
       evidence: ev,
       atFloor: o.floor > 0 && weight === o.floor,
+      trend: o.trend || { points:[], window:[], dir:null, delta:0, stuck:0 },
+      confidence: o.confidence || 'low',
+      confidenceWhy: o.confidenceWhy || '',
       unit,
     };
+  },
+
+  /* ---------- Reacting to what already happened today ----------
+     A plan built from history alone still asks set 4 for a number you just
+     failed on set 2. This re-reads the same targets against the sets already
+     logged this session. Pure, and applied at paint time rather than baked
+     into the cached plan, so the cache stays keyed on history alone.
+
+       · a set you beat  -> later sets ask for at least what you just did
+       · a set you missed AND logged as hard -> later sets are capped there
+
+     A miss that wasn't hard is left alone: that's a focus problem, and quietly
+     lowering the bar for it is how an app teaches you to coast. */
+  adjust(plan, doneToday, spec){
+    if(!plan || !plan.targets || !plan.targets.length) return plan;
+    const done = doneToday || [];
+    if(!done.length) return plan;
+
+    const clampAdj = v => Math.min(spec.repMax, Math.max(spec.repMin, v));
+    let cap = null, capWhy = '', raise = 0, moved = false;
+    const targets = plan.targets.map((t, i) => {
+      const d = done[i];
+      if(d && d.done && !d.warmup){
+        const reps = +d.reps || 0;
+        const rir = PROGRESSION.rirOf(d);
+        if(reps < t.reps && rir === 0){ cap = reps; capWhy = `set ${i + 1} was all you had`; }
+        else if(reps > t.reps){ raise = Math.max(raise, reps); }
+        return t;
+      }
+      let r = t.reps, why = t.why;
+      if(raise > r){ r = clampAdj(raise); why = `you already did ${raise}`; }
+      // a later hard miss outranks an earlier overshoot — you're fatiguing, not fresh
+      if(cap !== null && r > cap){ r = clampAdj(cap); why = capWhy; }
+      if(r === t.reps) return t;
+      moved = true;
+      return { ...t, reps: r, why, adjusted: true };
+    });
+
+    if(!moved) return plan;
+    return { ...plan, targets, allAtTop: targets.every(t => t.reps >= spec.repMax) };
   },
 };
 
@@ -2708,7 +2987,7 @@ function historyHash(h){
   const mix = s => { for(let i=0;i<s.length;i++){ a ^= s.charCodeAt(i); a = Math.imul(a, 16777619); } };
   for(const sess of h){
     mix(sess.date);
-    for(const s of sess.sets) mix((s.weight||0) + 'x' + (s.reps||0) + (s.warmup ? 'w' : ''));
+    for(const s of sess.sets) mix((s.weight||0) + 'x' + (s.reps||0) + (s.warmup ? 'w' : '') + (s.effort || ''));
   }
   return (a >>> 0).toString(36);
 }
@@ -2797,6 +3076,15 @@ function planFor(exSpec, asOf){
 function suggestTarget(exSpec, asOf){
   const p = planFor(exSpec, asOf);
   return { weight: p.weight, note: p.detail, atFloor: p.atFloor, plan: p };
+}
+
+/* The plan as it stands right now, mid-session: the cached history-based plan
+   re-read against the sets already logged today. Everything the gym screen
+   shows and prefills goes through here, so the strip, the steppers and the
+   Why panel cannot disagree about what this set is asking for. */
+function livePlan(exSpec){
+  const p = planFor(exSpec, focus.date);
+  return PROGRESSION.adjust(p, sessionDraft[exSpec.id] || [], exSpec);
 }
 
 /* ============================= HOME ============================= */
@@ -2979,7 +3267,7 @@ function ensureDefaults(exSpec, setIdx){
   const row = rows[setIdx];
   if(row.done || row.touched) return row;
 
-  const plan = planFor(exSpec, focus.date);
+  const plan = livePlan(exSpec);
   const target = plan.targets && plan.targets[setIdx];
 
   // the most recent set you actually completed for this exercise today
@@ -2996,13 +3284,11 @@ function ensureDefaults(exSpec, setIdx){
   const onPlan = !prev || (parseFloat(prev.weight) || 0) === plan.weight;
   row.weight = onPlan ? plan.weight : prev.weight;
 
-  /* A set's target is a floor, not a ceiling. If you just did more than the
-     next set asks for, default to what you just did — otherwise beating your
-     target on set 1 would make every following set ask for less, and you'd be
-     tapping + on every one of them. */
+  /* The target already accounts for today — livePlan() raises it to what you
+     just did and caps it after a set you logged as hard. Take it as given so
+     the number on the stepper is the number on the strip. */
   const want = onPlan && target ? target.reps : (onPlan ? plan.reps : exSpec.repMin);
-  const justDid = prev ? (parseInt(prev.reps, 10) || 0) : 0;
-  row.reps = clamp(Math.max(want, justDid), exSpec.repMin, exSpec.repMax);
+  row.reps = clamp(want, exSpec.repMin, exSpec.repMax);
   return row;
 }
 
@@ -3025,7 +3311,7 @@ function renderSession(sessionId, isReview, forDate){
       if(existing && existing[i]){ rows.push({...existing[i], done:true, touched:true}); }
       // left null on purpose — filled by ensureDefaults() at paint time so each set
       // can inherit whatever you actually lifted on the set before it
-      else { rows.push({ weight:null, reps:null, done:false, touched:false, warmup:false }); }
+      else { rows.push({ weight:null, reps:null, done:false, touched:false, warmup:false, effort:null }); }
       flat.push({exIdx, setIdx:i});
     }
     sessionDraft[exSpec.id] = rows;
@@ -3046,7 +3332,8 @@ function renderSession(sessionId, isReview, forDate){
   }
 
   focus = { exercises, flat, pos: startPos, sessionName: session.name, sessionId,
-            date: tKey, active:true, restEnd:null, restLen:0, restDinged:false };
+            date: tKey, active:true, restEnd:null, restLen:0, restDinged:false,
+            lastLogged:null };
   whyOpen = false;
   precomputePlans(exercises, tKey);   // off the main thread, before the first paint
   keepAwake(true);
@@ -3145,6 +3432,7 @@ function restBandHTML(){
         </div>
       </div>
       <div class="restbar"><i id="restBar" style="width:${pct}%"></i></div>
+      ${effortRowHTML(effortSubject(), true)}
     </div>
   `;
 }
@@ -3170,12 +3458,12 @@ function setLabel(exSpec, row){
    the actual numbers it read. */
 const RULE_ICON = {
   progress:'↑', 'add-reps':'+', repeat:'=', incomplete:'=', stall:'!',
-  return:'↓', baseline:'●', unknown:'?',
+  return:'↓', baseline:'●', unknown:'?', plateau:'~', floor:'▲',
 };
 let whyOpen = false;
 
 function targetCardHTML(exSpec, row){
-  const p = planFor(exSpec, focus.date);
+  const p = livePlan(exSpec);
   if(p.weight === null || p.weight === undefined){
     return `<div class="targetcard first">
         <div class="tgtwhy">${p.detail}</div>
@@ -3197,7 +3485,8 @@ function targetCardHTML(exSpec, row){
     const done = rows[i] && rows[i].done;
     const hit  = done && (parseFloat(rows[i].reps) || 0) >= tg.reps
                       && (parseFloat(rows[i].weight) || 0) >= tg.weight;
-    const cls = i === idx ? 'now' : (done ? (hit ? 'hit' : 'miss') : '');
+    const cls = [i === idx ? 'now' : (done ? (hit ? 'hit' : 'miss') : ''),
+                 tg.adjusted ? 'adj' : ''].filter(Boolean).join(' ');
     return `<span class="tsl ${cls}"><i>${i+1}</i>${tg.reps}</span>`;
   }).join('');
 
@@ -3219,11 +3508,59 @@ function targetCardHTML(exSpec, row){
           <ul class="tgtev">
             ${p.evidence.map(e=>`<li class="ev-${e.k}">${e.t}</li>`).join('')}
             ${p.targets.map(tg=>`<li class="ev-set">Set ${tg.set}: ${tg.reps} reps${
-              tg.was === null ? '' : ` — you did ${tg.was}`}</li>`).join('')}
+              tg.was === null ? '' : ` — you did ${tg.was}${
+                tg.wasEffort ? `, ${PROGRESSION.EFFORT_WORD[tg.wasEffort]}` : ''}`}${
+              tg.adjusted ? ' · adjusted for today' : ''}</li>`).join('')}
           </ul>
         </div>` : ''}
     </div>`;
 }
+
+/* ---------- How hard was it? ----------
+   The one thing the engine could never see. Three buttons, offered while you
+   are standing still anyway, in the place your eyes already are — the rest
+   band. Skipping it costs nothing: with no rating the engine falls back to
+   exactly the answers it gave before any of this existed. */
+const EFFORTS = [
+  { k:'easy', lbl:'Easy',  hint:'2+ reps left' },
+  { k:'ok',   lbl:'Right', hint:'about 1 left' },
+  { k:'hard', lbl:'Hard',  hint:'nothing left' },
+];
+
+// Which set the effort buttons are asking about, if any.
+function effortSubject(){
+  const { f, exSpec, row } = currentCell();
+  // standing on a set you already logged — rate it, or change what you said
+  if(row.done && !row.warmup) return { exSpec, row, setIdx:f.setIdx, here:true };
+  // resting after logging one — that is the set being asked about
+  const ll = focus.lastLogged;
+  if(!ll || !focus.restEnd) return null;
+  const rows = sessionDraft[ll.exId];
+  const r = rows && rows[ll.setIdx];
+  if(!r || !r.done || r.warmup) return null;
+  const ex = focus.exercises.find(e => e.id === ll.exId);
+  return ex ? { exSpec: ex, row: r, setIdx: ll.setIdx, here:false } : null;
+}
+
+/* Asked in whichever place is already on screen. While you're resting it rides
+   inside the rest band, so it costs no extra height at the exact moment the
+   screen is busiest; standing on a set you already logged, it stands alone. */
+function effortRowHTML(s, inBand){
+  if(!s || !!s.here === !!inBand) return '';
+  const chosen = s.row.effort;
+  const label = chosen
+    ? `Set ${s.setIdx+1} felt ${PROGRESSION.EFFORT_WORD[chosen]}`
+    : (inBand ? 'How did that set feel?' : `How did set ${s.setIdx+1} feel?`);
+  const btns = EFFORTS.map(e=>`
+    <button class="efbtn ${chosen === e.k ? 'on' : ''}" data-eff="${e.k}"
+      aria-pressed="${chosen === e.k}" title="${e.hint}">${e.lbl}</button>`).join('');
+  return `
+    <div class="effortbar ${inBand ? 'inband' : ''} ${chosen ? 'rated' : ''}" id="effortBar">
+      <div class="eflbl">${label}</div>
+      <div class="efbtns">${btns}</div>
+    </div>`;
+}
+function effortBarHTML(){ return effortRowHTML(effortSubject(), false); }
 
 function floorNoteHTML(exSpec, row){
   const floor = floorFor(exSpec.id);
@@ -3281,6 +3618,7 @@ function paintFocus(){
         <div class="setdots" aria-label="Set ${f.setIdx+1} of ${exSpec.sets}">${setDots}</div>
         <div class="focus-setlabel">Set ${f.setIdx+1} of ${exSpec.sets} · exercise ${f.exIdx+1} of ${focus.exercises.length}</div>
         ${restBandHTML()}
+        ${effortBarHTML()}
         ${targetCardHTML(exSpec, row)}
         <div class="focus-prev">${prevText}</div>
         <div class="floornote" id="floorNote">${floorNoteHTML(exSpec, row)}</div>
@@ -3365,7 +3703,8 @@ function attachFocusHandlers(exSpec, row){
   const edit = fn => ()=>{
     fn();
     row.touched = true;
-    if(row.done){ row.done = false; paintFocus(); return; }  // changing it means re-logging it
+    // changing it means re-logging it — and a rating of the old numbers is stale
+    if(row.done){ row.done = false; row.effort = null; paintFocus(); return; }
     refreshLive(exSpec, row);
   };
 
@@ -3388,24 +3727,42 @@ function attachFocusHandlers(exSpec, row){
     if(!restTimer) restTimer = setInterval(tickRest, 250);
     tickRest();
   });
-  root.querySelector('#restSkip')?.addEventListener('click', stopRest);
+  // Repaint, not just remove: skipping rest also dismisses the effort prompt
+  // that was riding with it, and a stale prompt about a set two ago is worse
+  // than no prompt at all. It comes back if you step back onto that set.
+  root.querySelector('#restSkip')?.addEventListener('click', ()=>{ stopRest(); paintFocus(); });
 
   root.querySelector('#logSet')?.addEventListener('click', ()=>{
     if(row.done){ advance(); return; }              // already logged — this is just "Next"
     row.weight = parseFloat(row.weight)||0;
     row.reps = parseFloat(row.reps)||0;
     row.done = true;
+    // remember which set the effort buttons are about once we've moved on
+    const cell = focus.flat[focus.pos];
+    focus.lastLogged = row.warmup ? null : { exId: exSpec.id, setIdx: cell.setIdx };
     buzz(18);
     if(!isLast) startRest(defaultRest(exSpec));
     advance();
   });
+
+  root.querySelectorAll('.efbtn').forEach(b=> b.addEventListener('click', ()=>{
+    const s = effortSubject();
+    if(!s) return;
+    const k = b.dataset.eff;
+    s.row.effort = s.row.effort === k ? null : k;   // tap again to clear a mis-tap
+    buzz(12);
+    // repaint: a hard set caps the sets after it, an easy one can lift them,
+    // and the strip and the steppers both have to show that immediately
+    paintFocus();
+  }));
   root.querySelector('#whyBtn')?.addEventListener('click', ()=>{ whyOpen = !whyOpen; paintFocus(); });
   root.querySelector('#warmToggle')?.addEventListener('click', ()=>{
     row.warmup = !row.warmup;
     paintFocus();
   });
   root.querySelector('#undoSet')?.addEventListener('click', ()=>{
-    row.done = false; row.touched = true;
+    row.done = false; row.touched = true; row.effort = null;
+    if(focus.lastLogged && focus.lastLogged.exId === exSpec.id) focus.lastLogged = null;
     stopRest();
     paintFocus();
   });
@@ -3473,6 +3830,9 @@ async function saveFocusSession(early){
       weight: parseFloat(r.weight)||0,
       reps: parseFloat(r.reps)||0,
       ...(r.warmup ? { warmup:true } : {}),
+      // only written when you actually rated it — absent means unknown, and
+      // every effort-aware rule is written to fall back cleanly on absent
+      ...(r.effort && PROGRESSION.EFFORT_RIR[r.effort] !== undefined ? { effort:r.effort } : {}),
     }));
     // Ramp-up sets are recorded but excluded from every judgement: they must not
     // set floors, break PRs, or drag a "below your floor" warning.
@@ -3919,6 +4279,36 @@ function findExSpec(exId){
   return null;
 }
 
+/* What the engine will ask for next time, on the screen you open to think
+   about this lift rather than to perform it. The gym card is deliberately
+   terse; here there is room to say what the trend is doing and how much the
+   engine trusts its own answer. */
+const TREND_WORD = { up:'trending up', flat:'holding flat', down:'trending down' };
+function nextUpHTML(spec){
+  if(!spec) return '';                      // history for a lift no longer in the plan
+  const p = planFor(spec);
+  if(p.rule === 'unknown') return '';
+  const unit = spec.isTime ? 's' : unitLabel();
+  const dir = p.trend && p.trend.dir;
+  return `
+    <div class="card" style="margin-top:14px;">
+      <div class="cardhead">
+        <span class="eyebrow" style="margin:0;">Next session</span>
+        ${dir ? `<span class="cardmeta ${dir === 'up' ? 'up' : (dir === 'down' ? 'down' : '')}">${TREND_WORD[dir]}</span>` : ''}
+      </div>
+      <div class="nextrow">
+        <span class="nexthead">${p.headline}</span>
+        ${p.weight === null || p.weight === undefined ? '' : `<span class="nextval">${
+          spec.isTime ? `${p.targets[0].reps}<em>${unit}</em>`
+                      : `${num(p.weight)}<em>${unit}</em> × ${p.targets.map(t=>t.reps).join('/')}`
+        }</span>`}
+      </div>
+      <p class="fchint" style="margin-top:8px;">${p.detail}</p>
+      <span class="conf conf-${p.confidence}">Confidence: ${p.confidence}${
+        p.confidenceWhy ? ` — ${p.confidenceWhy}` : ''}</span>
+    </div>`;
+}
+
 function renderExercise(exId, backTo){
   const spec = findExSpec(exId);
   const hist = getHistory(exId).slice().sort((a,b)=> a.date < b.date ? -1 : 1);
@@ -3996,6 +4386,8 @@ function renderExercise(exId, backTo){
         <div class="statcard"><div class="statnum">${bestE ? num(roundToPlate(bestE, unitKey())) : '—'}</div><div class="statlabel">Est. 1RM</div></div>
         <div class="statcard"><div class="statnum">${floor ? num(floor) : '—'}</div><div class="statlabel">Floor</div></div>
       </div>
+
+      ${nextUpHTML(spec)}
 
       ${lastChart ? `
         <div class="card" style="margin-top:14px;">
