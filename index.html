@@ -287,6 +287,11 @@
   .setchart .wlabels .warm{ color:var(--steel); }
 
   .setchart .plot{ position:relative; height:40px; align-items:flex-end; }
+  /* On the Progress screen there is room to let it breathe. */
+  .bigchart .setchart{ --cgap:10px; }
+  .bigchart .setchart .wlabels span{ font-size:13px; }
+  .bigchart .setchart .plot{ height:96px; }
+  .bigchart .setchart .fl em{ font-size:9px; top:-8px; }
   .setchart .slot{
     position:relative; height:100%; display:flex; align-items:flex-end;
     background:rgba(255,255,255,0.038); border-radius:4px;
@@ -307,27 +312,17 @@
 
   .setchart .fl em{ font-size:8.5px; top:-7px; }
 
-  /* Set-by-set records. Each set gets its own pill so the grouping is obvious
-     without leaning on a separator character, and the row can wrap cleanly. */
-  .exspec.setlist{
-    text-transform:none; letter-spacing:0; font-size:12.5px;
-    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+  /* Set-by-set records, minimal: spacing does the grouping, colour carries the
+     floor. No boxes, no chart — the log is scanned, not studied. */
+  .setline{
+    display:flex; flex-wrap:wrap; gap:3px 16px;
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    font-variant-numeric:tabular-nums; color:var(--chalk);
   }
-  .setchip{
-    white-space:nowrap; background:rgba(255,255,255,0.045);
-    border:1px solid rgba(255,255,255,0.05); border-radius:7px;
-    padding:4px 9px; line-height:1.35;
-  }
-  .setchip b{ color:var(--chalk); font-weight:600; }
-  .setchip .u{ color:var(--steel); font-size:0.84em; margin-left:1.5px; }
-  .setchip i{ font-style:normal; color:var(--steel); padding:0 5px; }
-  .exspec .sep{ display:none; }        /* the pills separate themselves */
-  .setchip.warm{ background:none; border-style:dashed; border-color:var(--gold-dim); }
-  .setchip.warm b{ color:var(--chalk-dim); font-weight:500; }
-  .setchip.warm::after{
-    content:'warm-up'; color:var(--gold-dim); font-size:0.72em;
-    letter-spacing:0.08em; text-transform:uppercase; margin-left:6px;
-  }
+  .setline .st{ white-space:nowrap; }
+  .setline .st i{ font-style:normal; color:var(--steel); padding:0 2px; }
+  .setline .st.under{ color:var(--danger); }
+  .setline .st.warm{ color:var(--steel); }
   /* rows that open a progress view */
   .exline.tappable{
     width:100%; text-align:left; background:none; color:inherit;
@@ -1652,21 +1647,20 @@ function setChartHTML(e){
     </div>`;
 }
 
-/* What you actually lifted, set by set: "120kg×10 · 125kg×9 · 115kg×11".
-   Still used where a chart doesn't fit — bodyweight work, and the compact
-   per-session list inside the Progress view. */
+/* One line, every set exactly, nothing else: "120×10  125×9  115×11".
+   The log is for scanning — colour carries the floor, spacing does the grouping,
+   and the unit is stated once on the row above. */
 function loggedSpecCaps(e){
   const sets = e.sets || [];
   if(!sets.length) return '';
   const sfx = e.isTime ? 's' : '';
+  const floor = (!e.isTime && e.floor > 0) ? e.floor : 0;
   return sets.map(s=>{
     const w = +s.weight || 0;
-    const r = s.reps;
-    const body = w > 0
-      ? `<b>${num(w)}</b><span class="u">${unitLabel()}</span><i>×</i><b>${r}${sfx}</b>`
-      : `<b>${r}${sfx}</b>`;
-    return `<span class="setchip${s.warmup ? ' warm' : ''}"${s.warmup ? ' title="Warm-up set"' : ''}>${body}</span>`;
-  }).join('<i class="sep">·</i>');
+    const cls = s.warmup ? 'warm' : (floor > 0 && w < floor ? 'under' : '');
+    const body = w > 0 ? `${num(w)}<i>×</i>${s.reps}${sfx}` : `${s.reps}${sfx}`;
+    return `<span class="st ${cls}"${s.warmup ? ' title="Warm-up set"' : ''}>${body}</span>`;
+  }).join('');
 }
 
 function planRowHTML(sid, idx, e){
@@ -3340,6 +3334,21 @@ function renderExercise(exId, backTo){
   const totalSets = hist.reduce((n,h)=> n + h.sets.length, 0);
   const volume = hist.reduce((n,h)=> n + h.sets.reduce((m,s)=> m + (s.weight||0)*(s.reps||0), 0), 0);
 
+  /* The floor chart lives here rather than in the log: one lift, one session,
+     a screen you opened on purpose and where there is room for it. */
+  const lastEntry = hist.length ? hist[hist.length-1] : null;
+  const lastCompletion = lastEntry
+    ? (state.completions[lastEntry.date] || {})[exId] || null
+    : null;
+  const lastChart = lastEntry ? setChartHTML({
+    isTime: !!(spec && spec.isTime),
+    sets: lastEntry.sets,
+    floor: lastCompletion && lastCompletion.floor,
+  }) : null;
+  const lastLabel = lastEntry
+    ? new Date(lastEntry.date + 'T00:00:00').toLocaleDateString(undefined,{ weekday:'short', day:'numeric', month:'short' })
+    : '';
+
   const rows = hist.slice().reverse().map(h=>{
     const pr = bestE1RM(h.sets) >= bestE - 0.01 && bestE > 0;
     const d = new Date(h.date + 'T00:00:00');
@@ -3349,7 +3358,7 @@ function renderExercise(exId, backTo){
           ${d.toLocaleDateString(undefined,{ weekday:'short', day:'numeric', month:'short' })}
           ${pr ? '<span class="pr-badge">★ Best</span>' : ''}
         </span>
-        <span class="exspec setlist">${loggedSpecCaps({ isTime: spec && spec.isTime, sets: h.sets })}</span>
+        <span class="setline">${loggedSpecCaps({ isTime: spec && spec.isTime, sets: h.sets })}</span>
       </div>`;
   }).join('');
 
@@ -3385,6 +3394,15 @@ function renderExercise(exId, backTo){
         <div class="statcard"><div class="statnum">${bestE ? num(roundToPlate(bestE, unitKey())) : '—'}</div><div class="statlabel">Est. 1RM</div></div>
         <div class="statcard"><div class="statnum">${floor ? num(floor) : '—'}</div><div class="statlabel">Floor</div></div>
       </div>
+
+      ${lastChart ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="cardhead">
+            <span class="eyebrow" style="margin:0;">Last session</span>
+            <span class="cardmeta">${lastLabel}</span>
+          </div>
+          <div class="bigchart">${lastChart}</div>
+        </div>` : ''}
 
       ${e1.length > 1 ? `
         <div class="card" style="margin-top:14px;">
@@ -3663,14 +3681,14 @@ function renderHistory(){
     const exHTML = exIds.map(exId=>{
       const e = entry[exId];
       const pr = meta.prs && meta.prs.indexOf(exId) > -1;
-      const chart = setChartHTML(e);
+      const weighted = (e.sets || []).some(s => (+s.weight || 0) > 0);
       return `
         <button class="exline tappable compact" data-exprog="${exId}">
           <span class="exlname">
             <span class="nm">${e.name}${pr ? '<span class="pr-badge">★ PR</span>' : ''}</span>
-            ${chart ? `<span class="exunit">${e.isTime ? 'sec' : unitLabel()}</span>` : ''}
+            <span class="exunit">${e.isTime ? 'sec' : (weighted ? unitLabel() : 'reps')}</span>
           </span>
-          ${chart || `<span class="exspec setlist">${loggedSpecCaps(e)}</span>`}
+          <span class="setline">${loggedSpecCaps(e)}</span>
         </button>`;
     }).join('');
     const flag = (meta.reason || meta.note) ? `
